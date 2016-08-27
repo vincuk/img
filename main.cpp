@@ -1,5 +1,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <igraph.h>
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
@@ -162,6 +163,34 @@ void image_graph_calc(string crd,string dir_input,string file_input)
 Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight,string crd,Mat im,string dir_conv,string dir_Edges,string dir_QuadTree,string dir_output)
 {
 	Adaptive_Grid ag;
+	time_t temp = time(0);
+    printf( "image width = %d, image height = %d\n", imWidth, imHeight);
+    int k = 3;
+    float smin = 3.2; //# thresholding works on 2px and more.
+    if (smin < 2) {
+        cout << " The minimum block size can not be less than 2 pixels" << endl;;
+        return ag;
+    }
+    int D = int(ceil(log(float(min(imWidth, imHeight))/smin) + float(3/2))) + 1; //because depth start from 0 in Python
+    int W = imWidth - (D*2);
+    int H = imHeight - (D*2);
+    printf( "imWidth of the grid = %d , imHeight of the grid = %d\n", W, H);
+    int dmax = int(ceil(log(float(min(W, H))/smin)+float(3/2)));
+    float disvalue;
+    smin <= 16 ? disvalue= 0.5*smin : disvalue = 8;
+    printf("smin = %d, dmax = %d, Distance = %d\n", int(smin), dmax, D);
+    printf("image width = %d, image height = %d\n", W, H);
+    printf("Disvalue = %f\n", disvalue);
+    
+    vector<float> ThresholdD;
+    cout << "{";
+    for( int i = 0; i < dmax; i++) {
+        ThresholdD.push_back(0);
+        cout << i << ": " << ThresholdD[i];
+        i < dmax - 1 ? cout << ", " : cout << "}" << endl;
+    }
+    cout << "[" << 0+(D) << ", " << 0+(D) << ", " << 0+(D)+W << ", " << 0+(D)+H << "]\n";
+
 	return ag;
 }
 //---------------------------------------------------------------------------//
