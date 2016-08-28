@@ -99,7 +99,7 @@ void image_graph(int imWidth,int imHeight,string crd, Mat image, int smin, int t
 //---------------------------------------------------------------------------//
 void image_graph_run()
 {
-    string dir_input("/home/next/Desktop/C/UpWork/PeterBrams/image_graph/images/");
+    string dir_input("/images/");
     string file_name("Control1.tif");
     string gridtype("rectangular");
     image_graph_calc(gridtype,dir_input,file_name);
