@@ -432,7 +432,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     for (int i = 0; i < ThresholdD.size(); i++)
         printf(" %d         %f           %lu \n", i, ThresholdD[i], Quadtree[i].size());
     
-//################# refining the quadtree ##############################
+    // refining the quadtree
     vector<Pos> Posit;
     for (int i = 0; i < ThresholdD.size(); i++) {
         for (int j = 0; j < Quadtree[i].size(); j++) {
@@ -446,6 +446,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
         }
     }
 
+    // removing duplicates
     vector<Triple> NoDubPosit;
     set<Couple> seen;
 
@@ -458,7 +459,8 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     Posit.clear();
     seen.clear();
     
-    int magn = 3;
+    // ploting positions
+    int magn = 3; // scale plot according to the original image size
     Mat img(magn * imHeight, magn * imWidth, CV_8U);
     Mat tim;
     im.convertTo(tim, CV_8U, 0.5, 125);
@@ -471,7 +473,6 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
         pnt.y = magn * NoDubPosit[i].k1;
         circle( img, pnt, 3, Scalar(255, 0, 0), -1);
     }
-    //////////
     imwrite(dir_outpu+sep+"plot_grid"+sep+"plot_positions.jpg", img);
     img.release();
     
