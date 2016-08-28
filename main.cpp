@@ -190,8 +190,39 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight,string c
         i < dmax - 1 ? cout << ", " : cout << "}" << endl;
     }
     cout << "[" << 0+(D) << ", " << 0+(D) << ", " << 0+(D)+W << ", " << 0+(D)+H << "]\n";
-
-	return ag;
+//##############################################################
+	Mat img = im.rowRange(0 + D, 0 + D + H);
+    img = img.colRange(0 + D, 0 + D + W);
+    
+//##############################################################
+    float Glabal_thresh;
+    if (k==1) {      //# THRESH_Otsu***
+        Glabal_thresh = threshold_otsu(img);
+    }
+    else if (k==2) {   //# default Sauvola's thresholding method***
+        Scalar m, std;
+        meanStdDev(img, m, std);
+        float img_thresh = m[0];
+        float img_std= std[0];
+        Glabal_thresh = img_thresh * ( 1 + 0.2 * ( img_std / 128 - 1 ) );
+    }
+    else if (k==3) {   //# Niblack thresholding method using (mean)
+        Scalar m, std;
+        meanStdDev(img, m, std);
+        float img_thresh = m[0];
+        float img_std= std[0];
+        Glabal_thresh = img_thresh + 0.5 * img_std;
+    }
+    cout << Glabal_thresh << endl;
+//####################################################################
+    Couple coord;
+    coord.k0 = 0;
+    coord.k1 = 0;
+    checkCell(&Quadtree, &Positions, 0, k, coord, disvalue, smin, im, W, H, crd, D, dmax, 0);
+    cout << "the time consumed to built the grid and multilevel thresholding is " << (time(0) - temp) << endl;
+    long Depth = Positions.Keys.size();
+    printf("Depths = %ld", Depth);
+    return ag;
 }
 //---------------------------------------------------------------------------//
 Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid Edges_pos_dir_conv,int dz)
