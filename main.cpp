@@ -64,9 +64,26 @@ struct Triple{
 
 };
 //---------------------------------------------------------------------------//
-struct Adaptive_Grid{
+struct DTriple{
+    double k0;
+    double k1;
+    int k2;
+    
+    // default parameterized constructor
+    DTriple(double k0 = 0, double k1 = 0, int k2 = 0) : k0(k0), k1(k1), k2(k2) {
+    }
+    
+    bool operator<(Triple a) const{
+        if(a.k0 < k0)return true;
+        if(a.k0 == k0 && a.k1 < k1)return true;
+        else return false;
+    }
+    
+};
+//---------------------------------------------------------------------------//
+struct Adaptive_Grid {
     std::vector<Triple> Edges;
-    std::vector<Triple> pos;
+    std::vector<DTriple> pos;
     string dir_conv;
 };
 //---------------------------------------------------------------------------//
@@ -98,28 +115,28 @@ struct Pos2D3D{
     std::vector<Triple> pos2D;
     std::vector<Triple> pos3D;
 };
-typedef map< int, vector<Couple> > nested_dict2;
-typedef map< Couple, vector<Pos> > mapelement;
+typedef map< int, std::vector<Couple> > nested_dict2;
+typedef map< Couple, std::vector<Pos> > mapelement;
 typedef map< int,  mapelement> nested_dict;
 //---------------------------------------------------------------------------//
 void image_graph(int imWidth,int imHeight,string crd, Mat image, int smin, int thresholding_m);
 void image_graph_run();
 void image_graph_calc(string crd,string dir_input,string file_input);
 Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv,string dir_Edges,string dir_QuadTree,string dir_output);
-Graph grid_grid_all(Mat im, string file_path,Adaptive_Grid Edges_pos_dir_conv,int dz);
+Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid Edges_pos_dir_conv, int dz);
 void save0(string url,std::vector<Triple> Edges);
 void save0(string url,std::vector<int> data);
 void save0(string url,string label);
-Data_Label graph_graph_all(Graph G,std::vector<Triple> pos);
+Data_Label graph_graph_all(Graph G,std::vector<DTriple> pos);
 Labels load0(string url);
 void write0(string url,Labels labels);
-void plot0(string url, int imHeight, int imWidth, std::vector<Triple> pos);
+void plot0(string url, int imHeight, int imWidth, std::vector<DTriple> pos);
 Labels load0(string url);
 Graph load1(string url);
 int number_of_nodes(Graph g);
-Graph subgraph(Graph g,int n1, int n2);
+Graph subgraph(Graph g, int n1, int n2);
 Graph convert_node_labels_to_integers(Graph g);
-Pos2D3D image_graph_help_grid_pos2D(int n,std::vector<Triple> pos);
+Pos2D3D image_graph_help_grid_pos2D(int n, std::vector<DTriple> pos);
 vector<float> ThresholdD;
 
 //---------------------------------------------------------------------------//
@@ -168,6 +185,7 @@ void image_graph_calc(string crd,string dir_input,string file_input)
         printf("3D image_graph ..\n"); // in next steps I will work on 3D version
     }
     Adaptive_Grid Edges_pos_dir_conv = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
+   
     cout<<"graph"<<endl;
     time_t temp1 = time(0);
     Graph graph = grid_grid_all(im,file_path,Edges_pos_dir_conv,1);
@@ -178,11 +196,11 @@ void image_graph_calc(string crd,string dir_input,string file_input)
     cout<< "obs network"<<endl;
     
     temp1 = time(0);
-    Data_Label data_label = graph_graph_all(graph,Edges_pos_dir_conv.pos);
+//    Data_Label data_label = graph_graph_all(graph,Edges_pos_dir_conv.pos);
     temp2 = time(0);
     cout<<"the time consumed to measure the graph's properties quantitatively is "<<(temp2-temp1)<<endl;
-    save0(dir_output+sep+"data_datn"+sep+"data_datn.npy",data_label.data);
-    save0(dir_output+sep+"data_prop"+sep+"data_prop.npy",data_label.label);
+//    save0(dir_output+sep+"data_datn"+sep+"data_datn.npy", data_label.data);
+//    save0(dir_output+sep+"data_prop"+sep+"data_prop.npy", data_label.label);
     
     Labels labels=load0(dir_output+sep+"data_prop"+sep+"data_prop.npy");
     
@@ -194,7 +212,7 @@ void image_graph_calc(string crd,string dir_input,string file_input)
     //     out.write('\t'.join([str(a) for a in numpy.hstack(datn)]))
     //     out.write('\n')
     
-    plot0(dir_output+sep+"data_grph"+sep+"data_grph.npy",imHeight,imWidth,Edges_pos_dir_conv.pos);
+//    plot0(dir_output+sep+"data_grph"+sep+"data_grph.npy",imHeight,imWidth,Edges_pos_dir_conv.pos);
 }
 //---------------------------------------------------------------------------//
 float threshold_otsu(Mat * im) {
@@ -320,9 +338,12 @@ void checkCell(nested_dict2 * QT, nested_dict * PS, int Depth, int k, Couple cel
     
 };
 //---------------------------------------------------------------------------//
-bool sortfunct (Triple i, Triple j) {
-    if (i.k0 < j.k0 && i.k1 < j.k1) return true;
-    if (i.k0 < j.k0 && i.k1 == j.k1) return true;
+bool sortfunct (DTriple i, DTriple j) {
+    if (i.k1 < j.k1) return true;
+    if (i.k1 == j.k1 ) {
+        if (i.k0 < j.k0) return true;
+        else return false;
+    }
     return false;
 }
 //---------------------------------------------------------------------------//
@@ -341,14 +362,11 @@ Triple most_common(vector<Triple> * inlist) {
     return com;
 }
 //---------------------------------------------------------------------------//
-Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, float DisValue, int imWidth,int imHeight, int MinSize, vector<Triple> * Posit, string dir_conv) {
+Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, float DisValue, int imWidth,int imHeight, int MinSize, vector<DTriple> * Posit, string dir_conv) {
     Adaptive_Grid ag;
+    
     double dx = float(imWidth) / pow(2, Depth);
     double dy = float(imHeight) / pow(2, Depth);
-    
-    // sorting the positions
-    sort(Posit->begin(), Posit->end(), sortfunct);
-
 
     // Generating the Edges
     vector<Triple> Edges;
@@ -364,13 +382,10 @@ Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, floa
     // Finding Edges' nodes in the main grid
     set<int> connectedNodes;
     Triple z1 = most_common(&Edges);
-//    deque<int> Q;
-//    Q.push_back(z1.k0);
     set<int> visited, QV;
     QV.insert(z1.k0);
     while (QV.size() > 0) {
         int node = *QV.begin();
-//        Q.pop_front();
         QV.erase(QV.find(node));
         if (visited.find(node) == visited.end()) {
             for (int i=0; i< Edges.size(); i++) {
@@ -379,29 +394,25 @@ Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, floa
                         connectedNodes.insert(Edges[i].k0);
                     if (connectedNodes.find(Edges[i].k1) == connectedNodes.end())
                         connectedNodes.insert(Edges[i].k1);
-                    if (QV.find(Edges[i].k0) == QV.end()) {
-//                        Q.push_back(Edges[i].k0);
+                    if (QV.find(Edges[i].k0) == QV.end())
                         QV.insert(Edges[i].k0);
-                    }
-                    if (QV.find(Edges[i].k1) == QV.end()) {
-//                        Q.push_back(Edges[i].k1);
+                    if (QV.find(Edges[i].k1) == QV.end())
                         QV.insert(Edges[i].k1);
-                    }
                 }
             }
             visited.insert(node);
         }
     }
     
-    vector<Triple> FPosit;
+    vector<DTriple> FPosit;
     
     for (int i = 0; i < Posit->size(); i++) {
         if (connectedNodes.find(i) != connectedNodes.end())
             FPosit.push_back(Posit->operator[](i));
     }
     
-    printf("# of Positions = %lu\n", Posit->size());
-    printf("# of Connect Positions = %lu\n", FPosit.size());
+    ag.pos = FPosit;
+    printf("# of Positions = %lu\n", FPosit.size());
     
     vector<Triple> FinalEdges;
     for (int key1 = 0; key1 < FPosit.size(); key1++) {
@@ -412,8 +423,9 @@ Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, floa
                 FinalEdges.push_back(Triple(key1, key2, 1));
         }
     }
-    printf( "# of Edges is %lu \n", FinalEdges.size());
     
+    ag.Edges = FinalEdges;
+    printf( "# of Edges is %lu \n", FinalEdges.size());
     
     return ag;
 }
@@ -421,6 +433,7 @@ Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, floa
 Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv, string dir_Edges, string dir_QuadTree, string dir_outpu)
 {
     Adaptive_Grid ag;
+    ag.dir_conv = dir_conv;
     
     time_t starttime;
     time(&starttime);
@@ -490,17 +503,20 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     }
 
     // removing duplicates
-    vector<Triple> NoDubPosit;
+    vector<DTriple> NoDubPosit;
     set<Couple> visited;
 
     for(int i = 1; i < Posit.size(); i++ ) {
         if (visited.find(Couple(Posit[i].x, Posit[i].y)) == visited.end()) {
             visited.insert(Couple(Posit[i].x, Posit[i].y));
-            NoDubPosit.push_back(Triple(Posit[i].x, Posit[i].y, Posit[i].Depth));
+            NoDubPosit.push_back(DTriple(Posit[i].x, Posit[i].y, 1));
         }
     }
     Posit.clear();
     visited.clear();
+    
+    // sorting the positions
+    sort(NoDubPosit.begin(), NoDubPosit.end(), sortfunct);
     
     // ploting positions
     int magn = 3; // scale plot according to the original image size
@@ -512,8 +528,8 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     cvtColor(img, img, COLOR_GRAY2RGB);
     Point pnt;
     for(int i = 1; i < NoDubPosit.size(); i++ ) {
-        pnt.x = magn * NoDubPosit[i].k0;
-        pnt.y = magn * NoDubPosit[i].k1;
+        pnt.x = magn * int(NoDubPosit[i].k0);
+        pnt.y = magn * int(NoDubPosit[i].k1);
         circle( img, pnt, 3, Scalar(255, 0, 0), -1);
     }
     imwrite(dir_outpu+sep+"plot_grid"+sep+"plot_positions.jpg", img);
@@ -523,9 +539,10 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     return ag;
 }
 //---------------------------------------------------------------------------//
-Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid Edges_pos_dir_conv,int dz)
+Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid Edges_pos_dir_conv, int dz)
 {
     Graph graph;
+    
     return graph;
 }
 //---------------------------------------------------------------------------//
