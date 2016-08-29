@@ -185,11 +185,11 @@ void image_graph_calc(string crd,string dir_input,string file_input)
     {
         printf("3D image_graph ..\n"); // in next steps I will work on 3D version
     }
-    Adaptive_Grid Edges_pos_dir_conv = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
+    Adaptive_Grid AG = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
    
     cout<<"graph"<<endl;
     time_t temp1 = time(0);
-    Graph graph = grid_grid_all(im, file_path, &Edges_pos_dir_conv,1);
+    Graph graph = grid_grid_all(im, file_path, &AG, 1);
     time_t temp2 = time(0);
     save0(dir_output+sep+"data_grph"+sep+"data_grph.npy",graph.Edges);
     
@@ -566,34 +566,50 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
 }
 //---------------------------------------------------------------------------//
 // edgekernel is Edges detection function using Gaussian Kernel
-vector<double> edgekernel(int lx, int ly, double v, double x1, double y1, double x2, double y2, int pbcx, int pbcy) {
+void edgekernel(matrix * ek, int lx, int ly, double v, double x1, double y1, double x2, double y2, int pbcx, int pbcy) {
     vector<double> dx1, dx2, dy1, dy2;
     for (int i = 0; i < lx; i++) {
-        dx1.push_back(fabs(i - x1));
-        dx2.push_back(fabs(i - x2));
-
+        dx1.push_back(pow(i - x1, 2) / (2.0*v));
+        dx2.push_back(pow(i - x2, 2) / (2.0*v));
     }
     for (int i = 0; i < ly; i++) {
-        dy1.push_back(fabs(i - y1));
-        dy2.push_back(fabs(i - y2));
-        
+        dy1.push_back(pow(i - y1, 2) / (2.0*v));
+        dy2.push_back(pow(i - y2, 2) / (2.0*v));
     }
     
-    ex1 = numpy.ones((ly,1))*dx1**2/(2.0*v)
-    ey1 = numpy.transpose(numpy.ones((lx,1))*dy1**2/(2.0*v))
-
-    ex2=numpy.ones((ly,1))*dx2**2/(2.0*v)
-    ey2=numpy.transpose(numpy.ones((lx,1))*dy2**2/(2.0*v))
-    ek=numpy.exp(-numpy.sqrt(ex1+ey1)-numpy.sqrt(ex2+ey2))
-    return numpy.divide(ek,numpy.sum(ek))
+    matrix ex1, ex2, ey1, ey2;
+    
+    ek->resize(ly);
+    
+    for (int i = 0; i < ly; i++) {
+        ek->operator[](i).resize(lx, 0);
+        ex1.push_back(dx1);
+        ex2.push_back(dx2);
+    }
+    for (int i = 0; i < lx; i++) {
+        ey1.push_back(dy1);
+        ey2.push_back(dy2);
+    }
+    
+    double summ = 0;
+    for (int i = 0; i < ly; i++) {
+        for (int j = 0; j < lx; j++) {
+            ek->operator[](i)[j] = exp( -( sqrt(ex1[i][j] +  ey1[j][i]) + sqrt(ex2[i][j] + ey2[j][i]) ) );
+            summ += ek->operator[](i)[j];
+        }
+    }
+    
+    for (int i = 0; i < ly; i++)
+        for (int j = 0; j < ly; j++)
+            ek->operator[](i)[j] /= summ;
 }
 //---------------------------------------------------------------------------//
 Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
 {
     vector<int> capas;
     
-    matrix conv;
-    vector<double> row;
+    vector<matrix> conv;
+    matrix row;
     int n, m, z0, z1;
     double x1, x2, y1, y2;
 
@@ -604,14 +620,13 @@ Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
         y1=AG->pos[n].k1;
         x2=AG->pos[m].k0;
         y2=AG->pos[m].k1;
-        row = edgekernel(im.cols, im.rows, AG->Disvalue, x1, y1, x2, y2, 0, 0);
-        save0(AG->dir_conv + "_L=" + to_string(e), row);
+        edgekernel(&row, im.cols, im.rows, AG->Disvalue, x1, y1, x2, y2, 0, 0);
+//        save0(AG->dir_conv + "_L=" + to_string(e), row);
         conv.push_back(row);
     }
     
     
     for (int e = 0; e < AG->Edges.size(); e++) { //loop over n# of edges
-//        conv=numpy.load(dir_convs+'_L='+str(e).zfill(4)+'.npy');
         n = AG->Edges[e].k0;
         m = AG->Edges[e].k1;
         z0 = int(AG->pos[n].k2 / dz);
