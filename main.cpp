@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <ctime>
 #include <vector>
-#include <queue>
+#include <deque>
 #include <set>
 #include <igraph.h>
 
@@ -320,26 +320,22 @@ void checkCell(nested_dict2 * QT, nested_dict * PS, int Depth, int k, Couple cel
     
 };
 //---------------------------------------------------------------------------//
-bool sortfunct (Pos i, Pos j) {
-    if (i.x < j.x && i.y < j.y) return true;
-    if (i.x == j.x && i.y < j.y) return true;
+bool sortfunct (Triple i, Triple j) {
+    if (i.k0 < j.k0 && i.k1 < j.k1) return true;
+    if (i.k0 < j.k0 && i.k1 == j.k1) return true;
     return false;
 }
 //---------------------------------------------------------------------------//
-Triple most_common(vector<Triple> list) {
-    map<Triple, int> mp;
+Triple most_common(vector<Triple> * inlist) {
+    map<String, int> mp;
     int maxv = 0;
-    Triple com = list[0];
-    for (vector<Triple>::iterator it = list.begin(); it != list.end(); it++) {
-        if (mp.find(*it) == mp.end()) {
-            mp[*it] = 1;
-        }
-        else {
-            mp[*it]++;
-            if (mp[*it] > maxv) {
-                maxv = mp[*it];
+    Triple com = inlist->operator[](0);
+    for (vector<Triple>::iterator it = inlist->begin(); it != inlist->end(); it++) {
+        String str = to_string(it->k0)+to_string(it->k1);
+        mp[str]++;
+        if (mp[str] > maxv) {
+                maxv = mp[str];
                 com = *it;
-            }
         }
     }
     return com;
@@ -347,31 +343,77 @@ Triple most_common(vector<Triple> list) {
 //---------------------------------------------------------------------------//
 Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, float DisValue, int imWidth,int imHeight, int MinSize, vector<Triple> * Posit, string dir_conv) {
     Adaptive_Grid ag;
-    float dx = float(imWidth) / pow(2, Depth);
-    float dy = float(imHeight) / pow(2, Depth);
+    double dx = float(imWidth) / pow(2, Depth);
+    double dy = float(imHeight) / pow(2, Depth);
     
-    //#################### sorting the positions ######################
-//    sort(Posit.begin(), Posit.end(), sortfunct);
+    // sorting the positions
+    sort(Posit->begin(), Posit->end(), sortfunct);
 
 
-//######################################################################
-//# Generating the Edges
+    // Generating the Edges
     vector<Triple> Edges;
     for (int key1 = 0; key1 < Posit->size(); key1++) {
         for (int key2 = 0; key2 < key1; key2++) {
-            int Dx = fabs(Posit->operator[](key1).k0 - Posit->operator[](key2).k0);
-            int Dy = fabs(Posit->operator[](key1).k0 - Posit->operator[](key2).k1);
+            int Dx = abs(Posit->operator[](key1).k0 - Posit->operator[](key2).k0);
+            int Dy = abs(Posit->operator[](key1).k1 - Posit->operator[](key2).k1);
             if (pow(float(Dx)/dx, 2) + pow(float(Dy)/dy, 2) < 1.1)
                 Edges.push_back(Triple(key1, key2, 1));
         }
     }
     
-//########################### Finding Edges' nodes in the main grid #######################
-    vector<int> connectedNodes;
-    Triple z1 = most_common(Edges);
-    queue<int> Q;
-    Q.push(z1.k0);
-    set<int> visited;
+    // Finding Edges' nodes in the main grid
+    set<int> connectedNodes;
+    Triple z1 = most_common(&Edges);
+//    deque<int> Q;
+//    Q.push_back(z1.k0);
+    set<int> visited, QV;
+    QV.insert(z1.k0);
+    while (QV.size() > 0) {
+        int node = *QV.begin();
+//        Q.pop_front();
+        QV.erase(QV.find(node));
+        if (visited.find(node) == visited.end()) {
+            for (int i=0; i< Edges.size(); i++) {
+                if ((node == Edges[i].k0) || (node == Edges[i].k1)) {
+                    if (connectedNodes.find(Edges[i].k0) == connectedNodes.end())
+                        connectedNodes.insert(Edges[i].k0);
+                    if (connectedNodes.find(Edges[i].k1) == connectedNodes.end())
+                        connectedNodes.insert(Edges[i].k1);
+                    if (QV.find(Edges[i].k0) == QV.end()) {
+//                        Q.push_back(Edges[i].k0);
+                        QV.insert(Edges[i].k0);
+                    }
+                    if (QV.find(Edges[i].k1) == QV.end()) {
+//                        Q.push_back(Edges[i].k1);
+                        QV.insert(Edges[i].k1);
+                    }
+                }
+            }
+            visited.insert(node);
+        }
+    }
+    
+    vector<Triple> FPosit;
+    
+    for (int i = 0; i < Posit->size(); i++) {
+        if (connectedNodes.find(i) != connectedNodes.end())
+            FPosit.push_back(Posit->operator[](i));
+    }
+    
+    printf("# of Positions = %lu\n", Posit->size());
+    printf("# of Connect Positions = %lu\n", FPosit.size());
+    
+    vector<Triple> FinalEdges;
+    for (int key1 = 0; key1 < FPosit.size(); key1++) {
+        for (int key2 = 0; key2 < key1; key2++) {
+            int Dx = abs(FPosit[key1].k0 - FPosit[key2].k0);
+            int Dy = abs(FPosit[key1].k1 - FPosit[key2].k1);
+            if (pow(float(Dx)/dx, 2) + pow(float(Dy)/dy, 2) < 1.1)
+                FinalEdges.push_back(Triple(key1, key2, 1));
+        }
+    }
+    printf( "# of Edges is %lu \n", FinalEdges.size());
+    
     
     return ag;
 }
@@ -380,7 +422,8 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
 {
     Adaptive_Grid ag;
     
-    time_t temp = time(0);
+    time_t starttime;
+    time(&starttime);
     printf( "image width = %d, image height = %d\n", imWidth, imHeight);
     int k = 3;
     float smin = 3.2; //# thresholding works on 2px and more.
@@ -416,7 +459,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
 
     Couple coord(0, 0);
     checkCell(&Quadtree, &Position, 0, k, coord, disvalue, smin, &im, W, H, crd, D, dmax);
-    cout << "the time consumed to built the grid and multilevel thresholding is " << (time(0) - temp) << endl;
+    cout << "the time consumed to built the grid and multilevel thresholding is " << difftime(time(NULL), starttime) << endl;
     long Depth = Position.size();
     printf("Depths = %ld\n", Depth);
     
@@ -448,16 +491,16 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
 
     // removing duplicates
     vector<Triple> NoDubPosit;
-    set<Couple> seen;
+    set<Couple> visited;
 
     for(int i = 1; i < Posit.size(); i++ ) {
-        if (seen.find(Couple(Posit[i].x, Posit[i].y)) == seen.end()) {
-            seen.insert(Couple(Posit[i].x, Posit[i].y));
+        if (visited.find(Couple(Posit[i].x, Posit[i].y)) == visited.end()) {
+            visited.insert(Couple(Posit[i].x, Posit[i].y));
             NoDubPosit.push_back(Triple(Posit[i].x, Posit[i].y, Posit[i].Depth));
         }
     }
     Posit.clear();
-    seen.clear();
+    visited.clear();
     
     // ploting positions
     int magn = 3; // scale plot according to the original image size
