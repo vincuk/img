@@ -147,6 +147,8 @@ void image_graph_run()
 //    string file_name("Control1.tif");
     string file_name("Cytoskeletal-1.tif");
     string gridtype("rectangular");
+    cout << "Starting for file \"" + file_name + "\"..." << endl;
+    cout << "Grid type: " + gridtype + "." << endl;
     image_graph_calc(gridtype,dir_input,file_name);
     return;
 }
@@ -546,7 +548,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     cvtColor(img, img, COLOR_GRAY2RGB);
     Point pnt1, pnt2;
     int u, v;
-    for(int i = 1; i < ag.Edges.size(); i++ ) {
+    for(int i = 0; i < ag.Edges.size(); i++ ) {
         u = ag.Edges[i].k0;
         v = ag.Edges[i].k1;
         pnt1.x = int(magn * ag.pos[u].k0);
@@ -611,7 +613,7 @@ igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
     vector<double> capas;
     vector<matrix> conv;
     
-    int n, m, z0, z1;
+    int n, m;
     double x1, x2, y1, y2;
 
     for (int e = 0; e < AG->Edges.size(); e++) {
@@ -639,21 +641,33 @@ igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
         capas[e] /= csumm;
     cout << "creating the graph\n";
     
-    int no = 0;
+    igraph_integer_t no = 0;
+    igraph_integer_t gr_size = (int)AG->Edges.size();
     igraph_t graph;
-    igraph_empty(&graph, (int)AG->pos.size(), 0);
-
-    igraph_vector_t edgs;
-    igraph_vector_init(&edgs, AG->Edges.size());
+//    igraph_vector_t edgs;
+    igraph_vector_t wht;
     
-    for (int e = 0; e < AG->Edges.size(); e++) {
+    igraph_i_set_attribute_table(&igraph_cattribute_table);
+    
+    igraph_empty(&graph, (int)AG->pos.size(), 0);
+//    igraph_vector_init(&edgs, 2*gr_size);
+    igraph_vector_init(&wht, gr_size);
+
+    for (int e = 0; e < gr_size; e++) {
         n = AG->Edges[e].k0;
         m = AG->Edges[e].k1;
-        no++;
         igraph_add_edge(&graph, n, m);
-        //        graph.add_edge(n, m, capa = capas[e],lgth = 1.0/capas[e]);
+
+//        VECTOR(edgs)[2*e] = n;
+//        VECTOR(edgs)[2*e + 1] = m;
+        VECTOR(wht)[e] = capas[e];
+        no++;
         printf("(%d, %d)\n", n, m);
     }
+    
+//    igraph_add_edges(&graph, &edgs, 0);
+    SETEANV(&graph, "capa", &wht);
+
     printf("no. of graph edges = %d\n", no);
 
     igraph_integer_t diameter;
@@ -664,8 +678,9 @@ igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
     igraph_transitivity_undirected(&graph, &cluster, IGRAPH_TRANSITIVITY_NAN);
     printf("Clustering coefficient: %f\n", (float) cluster);
 
-    igraph_vector_t whdegree;
-    int igraph_strength(&graph, wtdegree, const igraph_vs_t vids, IGRAPH_ALL, 1, const igraph_vector_t *weights);
+//    igraph_vector_t degree;
+//    igraph_degree(&graph, &degree, igraph_vss_all(), IGRAPH_ALL, IGRAPH_NO_LOOPS);
+//    printf("mean[degree] = %f\n" , (float)igraph_vector_prod(&degree) / (float)igraph_vector_size(&degree) );
     
     return graph;
 }
