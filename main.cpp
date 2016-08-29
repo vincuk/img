@@ -4,6 +4,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv/cv.h>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <sys/stat.h>
 #include <math.h>
@@ -73,18 +74,18 @@ struct DTriple{
     DTriple(double k0 = 0, double k1 = 0, int k2 = 0) : k0(k0), k1(k1), k2(k2) {
     }
     
-    bool operator<(Triple a) const{
+    bool operator<(DTriple a) const{
         if(a.k0 < k0)return true;
         if(a.k0 == k0 && a.k1 < k1)return true;
         else return false;
     }
-    
 };
 //---------------------------------------------------------------------------//
 struct Adaptive_Grid {
     std::vector<Triple> Edges;
     std::vector<DTriple> pos;
     string dir_conv;
+    double Disvalue;
 };
 //---------------------------------------------------------------------------//
 struct Pos {
@@ -118,12 +119,13 @@ struct Pos2D3D{
 typedef map< int, std::vector<Couple> > nested_dict2;
 typedef map< Couple, std::vector<Pos> > mapelement;
 typedef map< int,  mapelement> nested_dict;
+typedef vector< vector<double> > matrix;
 //---------------------------------------------------------------------------//
 void image_graph(int imWidth,int imHeight,string crd, Mat image, int smin, int thresholding_m);
 void image_graph_run();
 void image_graph_calc(string crd,string dir_input,string file_input);
 Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv,string dir_Edges,string dir_QuadTree,string dir_output);
-Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid Edges_pos_dir_conv, int dz);
+Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid * Edges_pos_dir_conv, int dz);
 void save0(string url,std::vector<Triple> Edges);
 void save0(string url,std::vector<int> data);
 void save0(string url,string label);
@@ -137,8 +139,7 @@ int number_of_nodes(Graph g);
 Graph subgraph(Graph g, int n1, int n2);
 Graph convert_node_labels_to_integers(Graph g);
 Pos2D3D image_graph_help_grid_pos2D(int n, std::vector<DTriple> pos);
-vector<float> ThresholdD;
-
+void save0(string url, std::vector<double> data);
 //---------------------------------------------------------------------------//
 void image_graph_run()
 {
@@ -188,7 +189,7 @@ void image_graph_calc(string crd,string dir_input,string file_input)
    
     cout<<"graph"<<endl;
     time_t temp1 = time(0);
-    Graph graph = grid_grid_all(im,file_path,Edges_pos_dir_conv,1);
+    Graph graph = grid_grid_all(im, file_path, &Edges_pos_dir_conv,1);
     time_t temp2 = time(0);
     save0(dir_output+sep+"data_grph"+sep+"data_grph.npy",graph.Edges);
     
@@ -218,7 +219,7 @@ void image_graph_calc(string crd,string dir_input,string file_input)
 float threshold_otsu(Mat * im) {
     return 0;
 }
-float treshold(Mat * img, int k, int x1, int x2, int y1, int y2) {
+float threshold(Mat * img, int k, int x1, int x2, int y1, int y2) {
     Mat imc = img->rowRange(y1, y2);
     imc = imc.colRange(x1, x2);
     
@@ -244,10 +245,10 @@ float treshold(Mat * img, int k, int x1, int x2, int y1, int y2) {
 
 //---------------------------------------------------------------------------//
 float QudtreeThreshold (Mat * im, int k, vector<Pos> * posi, int Depth) {
-    float B1_thresh = treshold(im, k, posi->operator[](0).x, posi->operator[](4).x, posi->operator[](0).y, posi->operator[](4).y);
-    float B2_thresh = treshold(im, k, posi->operator[](1).x, posi->operator[](5).x, posi->operator[](1).y, posi->operator[](5).y);
-    float B3_thresh = treshold(im, k, posi->operator[](3).x, posi->operator[](7).x, posi->operator[](3).y, posi->operator[](7).y);
-    float B4_thresh = treshold(im, k, posi->operator[](4).x, posi->operator[](8).x, posi->operator[](4).y, posi->operator[](8).y);
+    float B1_thresh = threshold(im, k, posi->operator[](0).x, posi->operator[](4).x, posi->operator[](0).y, posi->operator[](4).y);
+    float B2_thresh = threshold(im, k, posi->operator[](1).x, posi->operator[](5).x, posi->operator[](1).y, posi->operator[](5).y);
+    float B3_thresh = threshold(im, k, posi->operator[](3).x, posi->operator[](7).x, posi->operator[](3).y, posi->operator[](7).y);
+    float B4_thresh = threshold(im, k, posi->operator[](4).x, posi->operator[](8).x, posi->operator[](4).y, posi->operator[](8).y);
     return min(min(B1_thresh, B2_thresh), min(B3_thresh, B4_thresh));
 };
 //---------------------------------------------------------------------------//
@@ -260,10 +261,9 @@ void FindPositions(vector<Pos> * posi, double x1, double y1, double dx, double d
         }
     }
     printf("number of positions in Quads:%d\n", n);
-
 }
 //---------------------------------------------------------------------------//
-int Divide_Decision(nested_dict * PS, int Depth, int k, Couple cellCoords, float disvalue, float smin, int dmax, Mat * im, int imWidth, int imHeight, string crd, int D) {
+int Divide_Decision(nested_dict * PS, vector<float> * Threshold, int Depth, int k, Couple cellCoords, double disvalue, float smin, int dmax, Mat * im, int imWidth, int imHeight, string crd, int D) {
     double cellWidth = double(imWidth) / pow(2,Depth);
     double cellHeight = double(imHeight) / pow(2,Depth);
     
@@ -279,7 +279,7 @@ int Divide_Decision(nested_dict * PS, int Depth, int k, Couple cellCoords, float
     double minEdgeSize = min(cellWidth, cellHeight);
     
     if  (minEdgeSize >= smin) { // # comparing the boundaries with minimum size of the face
-        float B_thresh1 = treshold(im, k, x1, x2, y1, y2);
+        float B_thresh1 = threshold(im, k, x1, x2, y1, y2);
         vector<Pos> posi;
         FindPositions(&posi, x1, y1, dx, dy, crd, Depth, B_thresh1);
         
@@ -293,16 +293,16 @@ int Divide_Decision(nested_dict * PS, int Depth, int k, Couple cellCoords, float
         
         if (mind >= smin) {
             float avgDthreshold = QudtreeThreshold(im, k, &posi, Depth);
-            float AddedValue = ThresholdD[Depth] + avgDthreshold;
-            ThresholdD[Depth] = AddedValue;
+            float AddedValue = Threshold->operator[](Depth) + avgDthreshold;
+            Threshold->operator[](Depth) = AddedValue;
             printf("the sub-quads threshoding = %f \n", avgDthreshold);
             return 0;
         }
         else {
             if (int(mind) >= 2) {
                 float avgDthreshold = QudtreeThreshold(im, k, &posi, Depth);
-                float AddedValue= ThresholdD[Depth]+ avgDthreshold;
-                ThresholdD[Depth] = AddedValue;
+                float AddedValue = Threshold->operator[](Depth) + avgDthreshold;
+                Threshold->operator[](Depth) = AddedValue;
                 return 2;
             }
         }
@@ -314,13 +314,13 @@ int Divide_Decision(nested_dict * PS, int Depth, int k, Couple cellCoords, float
     return -1;
 }
 //---------------------------------------------------------------------------//
-void checkCell(nested_dict2 * QT, nested_dict * PS, int Depth, int k, Couple cellCoords, float disvalue, float smin, Mat * im, int imWidth, int imHeight, string crd, int D, int dmax) {
+void checkCell(nested_dict2 * QT, nested_dict * PS, vector<float> * Threshold, int Depth, int k, Couple cellCoords, float disvalue, float smin, Mat * im, int imWidth, int imHeight, string crd, int D, int dmax) {
     if (Depth > dmax+1) {
         cout << "the grid reaches the maximum depth " << Depth << endl;
         return;
     }
     //# Dividing the current depth for 4 parts :
-    int minThreshold = Divide_Decision(PS, Depth, k, cellCoords, disvalue, smin, dmax, im, imWidth, imHeight, crd, D);
+    int minThreshold = Divide_Decision(PS, Threshold, Depth, k, cellCoords, disvalue, smin, dmax, im, imWidth, imHeight, crd, D);
     if (minThreshold  != 1) {
         if (QT->find(Depth) == QT->end()) {
             vector<Couple> v = {cellCoords};
@@ -329,10 +329,10 @@ void checkCell(nested_dict2 * QT, nested_dict * PS, int Depth, int k, Couple cel
         else
             QT->at(Depth).push_back(cellCoords);
         if (minThreshold  != 2) {
-            checkCell(QT, PS, Depth + 1, k, dblCouple(cellCoords), disvalue, smin, im, imWidth, imHeight, crd, D, dmax);
-            checkCell(QT, PS, Depth + 1, k, dblCouple(cellCoords) + Couple(0,1), disvalue, smin, im, imWidth, imHeight, crd, D, dmax);
-            checkCell(QT, PS, Depth + 1, k, dblCouple(cellCoords) + Couple(1,0), disvalue, smin, im, imWidth, imHeight, crd, D, dmax);
-            checkCell(QT, PS, Depth + 1, k, dblCouple(cellCoords) + Couple(1,1), disvalue, smin, im, imWidth, imHeight, crd, D, dmax);
+            checkCell(QT, PS, Threshold, Depth + 1, k, dblCouple(cellCoords), disvalue, smin, im, imWidth, imHeight, crd, D, dmax);
+            checkCell(QT, PS, Threshold, Depth + 1, k, dblCouple(cellCoords) + Couple(0,1), disvalue, smin, im, imWidth, imHeight, crd, D, dmax);
+            checkCell(QT, PS, Threshold, Depth + 1, k, dblCouple(cellCoords) + Couple(1,0), disvalue, smin, im, imWidth, imHeight, crd, D, dmax);
+            checkCell(QT, PS, Threshold, Depth + 1, k, dblCouple(cellCoords) + Couple(1,1), disvalue, smin, im, imWidth, imHeight, crd, D, dmax);
         }
     }
     
@@ -362,8 +362,10 @@ Triple most_common(vector<Triple> * inlist) {
     return com;
 }
 //---------------------------------------------------------------------------//
-Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, float DisValue, int imWidth,int imHeight, int MinSize, vector<DTriple> * Posit, string dir_conv) {
+Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, double DisValue, int imWidth,int imHeight, int MinSize, vector<DTriple> * Posit, string dir_conv) {
     Adaptive_Grid ag;
+    ag.Disvalue = DisValue;
+    ag.dir_conv = dir_conv;
     
     double dx = float(imWidth) / pow(2, Depth);
     double dy = float(imHeight) / pow(2, Depth);
@@ -433,8 +435,6 @@ Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, floa
 Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv, string dir_Edges, string dir_QuadTree, string dir_outpu)
 {
     Adaptive_Grid ag;
-    ag.dir_conv = dir_conv;
-    
     time_t starttime;
     time(&starttime);
     printf( "image width = %d, image height = %d\n", imWidth, imHeight);
@@ -455,6 +455,10 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     printf("image width = %d, image height = %d\n", W, H);
     printf("Disvalue = %f\n", disvalue);
     
+    nested_dict2 Quadtree;
+    nested_dict Position;
+    vector<float> ThresholdD;
+    
     cout << "{";
     for( int i = 0; i < dmax; i++) {
         ThresholdD.push_back(0);
@@ -464,14 +468,10 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     cout << "[" << 0+(D) << ", " << 0+(D) << ", " << 0+(D)+W << ", " << 0+(D)+H << "]\n";
     
 //##############################################################
-    float Global_thresh = treshold(&im, k, 0 + D, 0 + D + W, 0 + D, 0 + D + H);
+    float Global_thresh = threshold(&im, k, 0 + D, 0 + D + W, 0 + D, 0 + D + H);
     cout << Global_thresh << endl;
 //####################################################################
-    nested_dict2 Quadtree;
-    nested_dict Position;
-
-    Couple coord(0, 0);
-    checkCell(&Quadtree, &Position, 0, k, coord, disvalue, smin, &im, W, H, crd, D, dmax);
+    checkCell(&Quadtree, &Position, &ThresholdD, 0, k, Couple(0, 0), disvalue, smin, &im, W, H, crd, D, dmax);
     cout << "the time consumed to built the grid and multilevel thresholding is " << difftime(time(NULL), starttime) << endl;
     long Depth = Position.size();
     printf("Depths = %ld\n", Depth);
@@ -514,6 +514,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     }
     Posit.clear();
     visited.clear();
+    ThresholdD.clear();
     
     // sorting the positions
     sort(NoDubPosit.begin(), NoDubPosit.end(), sortfunct);
@@ -528,20 +529,113 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     cvtColor(img, img, COLOR_GRAY2RGB);
     Point pnt;
     for(int i = 1; i < NoDubPosit.size(); i++ ) {
-        pnt.x = magn * int(NoDubPosit[i].k0);
-        pnt.y = magn * int(NoDubPosit[i].k1);
+        pnt.x = int(magn * NoDubPosit[i].k0);
+        pnt.y = int(magn * NoDubPosit[i].k1);
         circle( img, pnt, 3, Scalar(255, 0, 0), -1);
     }
     imwrite(dir_outpu+sep+"plot_grid"+sep+"plot_positions.jpg", img);
+    
+    // generate grid
+    ag = Generate_Edges_Convs(Depth, Couple(0,0), &im, disvalue, W, H, smin, &NoDubPosit, dir_conv);
+    
+    // ploting grid
+    magn = 3; // scale plot according to the original image size
+    im.convertTo(tim, CV_8U, 0.5, 125);
+    resize(tim, img, img.size(), magn, magn, INTER_NEAREST);
+    tim.release();
+    cvtColor(img, img, COLOR_GRAY2RGB);
+    Point pnt1, pnt2;
+    int u, v;
+    for(int i = 1; i < ag.Edges.size(); i++ ) {
+        u = ag.Edges[i].k0;
+        v = ag.Edges[i].k1;
+        pnt1.x = int(magn * ag.pos[u].k0);
+        pnt1.y = int(magn * ag.pos[u].k1);
+        pnt2.x = int(magn * ag.pos[v].k0);
+        pnt2.y = int(magn * ag.pos[v].k1);
+        if (pnt1 != pnt2)
+            line(img, pnt1, pnt2, Scalar(255, 0, 0), 2);
+        else
+            line(img, pnt1, pnt2, Scalar(0, 255, 0), 2);
+    }
+    imwrite(dir_outpu+sep+"plot_grid"+sep+"plot_grid.jpg", img);
     img.release();
     
-    ag = Generate_Edges_Convs(Depth, Couple(0,0), &im, disvalue, W, H, smin, &NoDubPosit, dir_conv);
+    cout << "The adaptive grid is built!" << endl;
     return ag;
 }
 //---------------------------------------------------------------------------//
-Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid Edges_pos_dir_conv, int dz)
+// edgekernel is Edges detection function using Gaussian Kernel
+vector<double> edgekernel(int lx, int ly, double v, double x1, double y1, double x2, double y2, int pbcx, int pbcy) {
+    vector<double> dx1, dx2, dy1, dy2;
+    for (int i = 0; i < lx; i++) {
+        dx1.push_back(fabs(i - x1));
+        dx2.push_back(fabs(i - x2));
+
+    }
+    for (int i = 0; i < ly; i++) {
+        dy1.push_back(fabs(i - y1));
+        dy2.push_back(fabs(i - y2));
+        
+    }
+    
+    ex1 = numpy.ones((ly,1))*dx1**2/(2.0*v)
+    ey1 = numpy.transpose(numpy.ones((lx,1))*dy1**2/(2.0*v))
+
+    ex2=numpy.ones((ly,1))*dx2**2/(2.0*v)
+    ey2=numpy.transpose(numpy.ones((lx,1))*dy2**2/(2.0*v))
+    ek=numpy.exp(-numpy.sqrt(ex1+ey1)-numpy.sqrt(ex2+ey2))
+    return numpy.divide(ek,numpy.sum(ek))
+}
+//---------------------------------------------------------------------------//
+Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
 {
+    vector<int> capas;
+    
+    matrix conv;
+    vector<double> row;
+    int n, m, z0, z1;
+    double x1, x2, y1, y2;
+
+    for (int e = 0; e < AG->Edges.size(); e++) {
+        n = AG->Edges[e].k0;
+        m = AG->Edges[e].k1;
+        x1=AG->pos[n].k0;
+        y1=AG->pos[n].k1;
+        x2=AG->pos[m].k0;
+        y2=AG->pos[m].k1;
+        row = edgekernel(im.cols, im.rows, AG->Disvalue, x1, y1, x2, y2, 0, 0);
+        save0(AG->dir_conv + "_L=" + to_string(e), row);
+        conv.push_back(row);
+    }
+    
+    
+    for (int e = 0; e < AG->Edges.size(); e++) { //loop over n# of edges
+//        conv=numpy.load(dir_convs+'_L='+str(e).zfill(4)+'.npy');
+        n = AG->Edges[e].k0;
+        m = AG->Edges[e].k1;
+        z0 = int(AG->pos[n].k2 / dz);
+        z1 = int(AG->pos[m].k2 / dz);
+        
+//        if (z0 == z1) capas.push_back(numpy.sum(numpy.multiply(im, conv)));
+    }
+    
+//    capas = numpy.divide(capas,numpy.sum(capas));
+    cout << "creating the graph\n";
+    
+    int no=0;
+//    graph=networkx.Graph();
     Graph graph;
+    
+//    for or<int> capas;
+//    for (int e=0; e<Edges.size(); e++) { //loop over n# of edges
+//        n= Edges[e].;
+//        m= Edges[e][1];
+//        graph.add_edge(n, m, capa = capas[e],lgth = 1.0/capas[e]);
+//        no++;
+//        printf("(%f,%f)", n, m);
+//    }
+//    printf("no. of graph edges = %d", no);
     
     return graph;
 }
@@ -581,8 +675,13 @@ void save0(string url,std::vector<Triple> Edges)
 {
 }
 //---------------------------------------------------------------------------//
-void save0(string url,std::vector<int> data)
-{
+void save0(string url, std::vector<double> data) {
+    ofstream file;
+    file.open (url, ios::ate);
+    for (auto it = data.begin(); it != data.end(); it++)
+        file << to_string(*it) << "\t";
+    file <<endl;
+    file.close();
 }
 //---------------------------------------------------------------------------//
 void save0(string url,string label)
