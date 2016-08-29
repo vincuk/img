@@ -641,21 +641,31 @@ igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
     
     int no = 0;
     igraph_t graph;
+    igraph_empty(&graph, (int)AG->pos.size(), 0);
+
+    igraph_vector_t edgs;
+    igraph_vector_init(&edgs, AG->Edges.size());
     
     for (int e = 0; e < AG->Edges.size(); e++) {
         n = AG->Edges[e].k0;
         m = AG->Edges[e].k1;
+        no++;
+        igraph_add_edge(&graph, n, m);
+        //        graph.add_edge(n, m, capa = capas[e],lgth = 1.0/capas[e]);
+        printf("(%d, %d)\n", n, m);
     }
-    
-//    for or<int> capas;
-//    for (int e=0; e<Edges.size(); e++) { //loop over n# of edges
-//        n= Edges[e].;
-//        m= Edges[e][1];
-//        graph.add_edge(n, m, capa = capas[e],lgth = 1.0/capas[e]);
-//        no++;
-//        printf("(%f,%f)", n, m);
-//    }
-    printf("no. of graph edges = %d", no);
+    printf("no. of graph edges = %d\n", no);
+
+    igraph_integer_t diameter;
+    igraph_diameter(&graph, &diameter, 0, 0, 0, IGRAPH_UNDIRECTED, 1);
+    printf("Diameter of the graph: %d\n", (int) diameter);
+
+    igraph_real_t cluster;
+    igraph_transitivity_undirected(&graph, &cluster, IGRAPH_TRANSITIVITY_NAN);
+    printf("Clustering coefficient: %f\n", (float) cluster);
+
+    igraph_vector_t whdegree;
+    int igraph_strength(&graph, wtdegree, const igraph_vs_t vids, IGRAPH_ALL, 1, const igraph_vector_t *weights);
     
     return graph;
 }
