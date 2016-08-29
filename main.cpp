@@ -125,7 +125,7 @@ void image_graph(int imWidth,int imHeight,string crd, Mat image, int smin, int t
 void image_graph_run();
 void image_graph_calc(string crd,string dir_input,string file_input);
 Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv,string dir_Edges,string dir_QuadTree,string dir_output);
-Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid * Edges_pos_dir_conv, int dz);
+igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz);
 void save0(string url,std::vector<Triple> Edges);
 void save0(string url,std::vector<int> data);
 void save0(string url,string label);
@@ -185,27 +185,27 @@ void image_graph_calc(string crd,string dir_input,string file_input)
     {
         printf("3D image_graph ..\n"); // in next steps I will work on 3D version
     }
-    Adaptive_Grid AG = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
+    Adaptive_Grid AdGrid = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
    
     cout<<"graph"<<endl;
     time_t temp1 = time(0);
-    Graph graph = grid_grid_all(im, file_path, &AG, 1);
+    igraph_t graph = grid_grid_all(im, file_path, &AdGrid, 1);
     time_t temp2 = time(0);
-    save0(dir_output+sep+"data_grph"+sep+"data_grph.npy",graph.Edges);
+//    save0(dir_output+sep+"data_grph"+sep+"data_grph.npy",graph.Edges);
     
-    cout << "the time consumed to build the graph is " << (temp2-temp1) << endl;
-    cout<< "obs network"<<endl;
+    cout << "the time consumed to build the graph is " << difftime(temp2, temp1) << endl;
+    cout<< "obs network" << endl;
     
     temp1 = time(0);
 //    Data_Label data_label = graph_graph_all(graph,Edges_pos_dir_conv.pos);
     temp2 = time(0);
-    cout<<"the time consumed to measure the graph's properties quantitatively is "<<(temp2-temp1)<<endl;
+    cout<<"the time consumed to measure the graph's properties quantitatively is " << difftime(temp2, temp1) << endl;
 //    save0(dir_output+sep+"data_datn"+sep+"data_datn.npy", data_label.data);
 //    save0(dir_output+sep+"data_prop"+sep+"data_prop.npy", data_label.label);
     
-    Labels labels=load0(dir_output+sep+"data_prop"+sep+"data_prop.npy");
+//    Labels labels=load0(dir_output+sep+"data_prop"+sep+"data_prop.npy");
     
-    write0(dir_output+sep+"data_readable"+sep+"data_readable.txt",labels);
+//    write0(dir_output+sep+"data_readable"+sep+"data_readable.txt",labels);
     // with open(dir_output"+sep+"data_readable"+sep+"data_readable.txt","a") as out:
     //     out.write('\t'.join([str(a) for a in numpy.hstack(labels)]))
     //     out.write('\n')
@@ -566,7 +566,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
 }
 //---------------------------------------------------------------------------//
 // edgekernel is Edges detection function using Gaussian Kernel
-void edgekernel(matrix * ek, int lx, int ly, double v, double x1, double y1, double x2, double y2, int pbcx, int pbcy) {
+matrix edgekernel(int lx, int ly, double v, double x1, double y1, double x2, double y2, int pbcx, int pbcy) {
     vector<double> dx1, dx2, dy1, dy2;
     for (int i = 0; i < lx; i++) {
         dx1.push_back(pow(i - x1, 2) / (2.0*v));
@@ -577,12 +577,12 @@ void edgekernel(matrix * ek, int lx, int ly, double v, double x1, double y1, dou
         dy2.push_back(pow(i - y2, 2) / (2.0*v));
     }
     
-    matrix ex1, ex2, ey1, ey2;
+    matrix ex1, ex2, ey1, ey2, ek;
     
-    ek->resize(ly);
+    ek.resize(ly);
     
     for (int i = 0; i < ly; i++) {
-        ek->operator[](i).resize(lx, 0);
+        ek[i].resize(lx, 0);
         ex1.push_back(dx1);
         ex2.push_back(dx2);
     }
@@ -594,53 +594,58 @@ void edgekernel(matrix * ek, int lx, int ly, double v, double x1, double y1, dou
     double summ = 0;
     for (int i = 0; i < ly; i++) {
         for (int j = 0; j < lx; j++) {
-            ek->operator[](i)[j] = exp( -( sqrt(ex1[i][j] +  ey1[j][i]) + sqrt(ex2[i][j] + ey2[j][i]) ) );
-            summ += ek->operator[](i)[j];
+            ek[i][j] = exp( -( sqrt(ex1[i][j] +  ey1[j][i]) + sqrt(ex2[i][j] + ey2[j][i]) ) );
+            summ += ek[i][j];
         }
     }
     
     for (int i = 0; i < ly; i++)
-        for (int j = 0; j < ly; j++)
-            ek->operator[](i)[j] /= summ;
+        for (int j = 0; j < lx; j++)
+            ek[i][j] /= summ;
+    
+    return ek;
 }
 //---------------------------------------------------------------------------//
-Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
+igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
 {
-    vector<int> capas;
-    
+    vector<double> capas;
     vector<matrix> conv;
-    matrix row;
+    
     int n, m, z0, z1;
     double x1, x2, y1, y2;
 
     for (int e = 0; e < AG->Edges.size(); e++) {
         n = AG->Edges[e].k0;
         m = AG->Edges[e].k1;
-        x1=AG->pos[n].k0;
-        y1=AG->pos[n].k1;
-        x2=AG->pos[m].k0;
-        y2=AG->pos[m].k1;
-        edgekernel(&row, im.cols, im.rows, AG->Disvalue, x1, y1, x2, y2, 0, 0);
+        x1 = AG->pos[n].k0;
+        y1 = AG->pos[n].k1;
+        x2 = AG->pos[m].k0;
+        y2 = AG->pos[m].k1;
+        conv.push_back( edgekernel(im.cols, im.rows, AG->Disvalue, x1, y1, x2, y2, 0, 0) );
 //        save0(AG->dir_conv + "_L=" + to_string(e), row);
-        conv.push_back(row);
     }
     
-    
+    double csumm = 0;
     for (int e = 0; e < AG->Edges.size(); e++) { //loop over n# of edges
-        n = AG->Edges[e].k0;
-        m = AG->Edges[e].k1;
-        z0 = int(AG->pos[n].k2 / dz);
-        z1 = int(AG->pos[m].k2 / dz);
-        
-//        if (z0 == z1) capas.push_back(numpy.sum(numpy.multiply(im, conv)));
+        double summ = 0;
+        for (int i = 0; i < im.cols; i++)
+            for (int j = 0; j < im.rows; j++)
+                summ += im.at<double>(i,j) * conv[e][j][i];
+        capas.push_back(summ);
+        csumm += summ;
     }
     
-//    capas = numpy.divide(capas,numpy.sum(capas));
+    for(int e = 0; e < AG->Edges.size(); e++)
+        capas[e] /= csumm;
     cout << "creating the graph\n";
     
-    int no=0;
-//    graph=networkx.Graph();
-    Graph graph;
+    int no = 0;
+    igraph_t graph;
+    
+    for (int e = 0; e < AG->Edges.size(); e++) {
+        n = AG->Edges[e].k0;
+        m = AG->Edges[e].k1;
+    }
     
 //    for or<int> capas;
 //    for (int e=0; e<Edges.size(); e++) { //loop over n# of edges
@@ -650,7 +655,7 @@ Graph grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
 //        no++;
 //        printf("(%f,%f)", n, m);
 //    }
-//    printf("no. of graph edges = %d", no);
+    printf("no. of graph edges = %d", no);
     
     return graph;
 }
