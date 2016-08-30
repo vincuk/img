@@ -469,7 +469,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     sort(NoDubPosit.begin(), NoDubPosit.end(), sortfunct);
     
     // ploting positions
-    float magn = 1.5; // scale plot according to the original image size
+    float magn = 2.5; // scale plot according to the original image size
     int pntsize = 3; // points size
     Mat img(magn * imHeight, magn * imWidth, CV_8U);
     Mat tim;
