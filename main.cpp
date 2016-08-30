@@ -1,9 +1,6 @@
 //[includes]
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv/cv.h>
 #include <iostream>
+#include <unistd.h>
 #include <fstream>
 #include <string>
 #include <sys/stat.h>
@@ -11,6 +8,9 @@
 #include <ctime>
 #include <vector>
 #include <set>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <igraph.h>
 //---------------------------------------------------------------------------//
 //[namespace]
@@ -115,9 +115,17 @@ void save0(string url, std::vector<int> data);
 void save0(string url, std::vector<double> data);
 void save0(string url, string label);
 //---------------------------------------------------------------------------//
+//#############################################################################
+//#############################################################################
+//#############################################################################
+//---------------------------------------------------------------------------//
 void image_graph_run()
 {
-    string dir_input("/Users/vincUk/Desktop/image_graph/images/");
+    char the_path[256];
+    getcwd(the_path, 255);
+    strcat(the_path, "/images/");
+//    string dir_input("/Users/vincUk/Desktop/image_graph/images/");
+    string dir_input(the_path);
 //    string file_name("Control1.tif");
     string file_name("Cytoskeletal-1.tif");
     string gridtype("rectangular");
@@ -480,6 +488,9 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
         circle( img, pnt, 3, Scalar(255, 0, 0), -1);
     }
     imwrite(dir_outpu+sep+"plot_grid"+sep+"plot_positions.jpg", img);
+    
+    namedWindow("Display Image", WINDOW_AUTOSIZE );
+    imshow("Display Image", img);
     
     // generate grid
     ag = Generate_Edges_Convs(Depth, Couple(0,0), &im, disvalue, W, H, smin, &NoDubPosit, dir_conv);
