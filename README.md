@@ -1,6 +1,6 @@
 ###Requirements:
 
-Required `OpenCV` and `igraph`.
+Required `OpenCV` and `igraph` library.
 
 ###Installation: 
 
