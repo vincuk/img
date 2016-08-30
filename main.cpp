@@ -325,7 +325,7 @@ Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, doub
     }
     
     if(Edges.size() == 0) {
-        cout << "No edges add to graph!" << endl;
+        cout << "No edges added to the graph!" << endl;
         ag.Disvalue = -1;
         return ag;
     }
