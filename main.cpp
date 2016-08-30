@@ -653,8 +653,12 @@ void save0(string url, string label) {
 int main( int argc, char* argv[] )
 {
     if (argc == 1) {
-        cout <<  "usage: imageg_raph <filename>" << endl;
-        return 0;
+        cout <<  "Usage: image_graph <filename>" << endl;
+        return -1;
+    }
+    else if (argc > 2) {
+        cout <<  "Too many arguments!" << endl;
+        return -1;
     }
     char the_path[256];
     getcwd(the_path, 255);
@@ -664,7 +668,7 @@ int main( int argc, char* argv[] )
         FILE *file;
         file = fopen(file_name.c_str(), "r");
         if (file == NULL) {
-            cout << "file \"" << file_name << "\" not found!" << endl;
+            cout << "File \"" << file_name << "\" not found!" << endl;
             return -1;
         }
     } catch (int e) {}
