@@ -107,8 +107,8 @@ typedef vector< vector<double> > matrix;
 //---------------------------------------------------------------------------//
 void image_graph(int imWidth,int imHeight,string crd, Mat image, int smin, int thresholding_m);
 void image_graph_calc(string crd,string dir_input,string file_input);
-Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv,string dir_Edges,string dir_QuadTree,string dir_output);
-void grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz);
+Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat * im, string dir_conv,string dir_Edges,string dir_QuadTree,string dir_output);
+void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz);
 void save0(string url, std::vector<Triple> Edges);
 void save0(string url, std::vector<int> data);
 void save0(string url, std::vector<double> data);
@@ -121,19 +121,23 @@ void save0(string url, string label);
 void image_graph_calc(string crd, string dir_input, string file_input)
 {
     string name("Adaptive_grid_");
-    string dir_output = dir_input + "Output_" + name + file_input + sep;
-//    string subfolders[7] = {"data_posi", "data_conv", "data_grph", "data_datn", "data_prop", "data_readable", "plot_grid"};
+    
+    string file_name = file_input.substr(file_input.rfind(sep) + 1, file_input.length() - 1);
+    cout << file_name << endl;
+    string dir_output = dir_input + "Output_" + name + file_name + sep;
+    
+    //string subfolders[7] = {"data_posi", "data_conv", "data_grph", "data_datn", "data_prop", "data_readable", "plot_grid"};
     string subfolders[2] = {"data_readable", "plot_grid"};
-    string file_path = dir_input + file_input;
+    string file_path = file_input;
     mkdir(dir_output.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    
     cout << "Creating subfolders..." << endl;
+    
     for (int i = 0; i < (sizeof(subfolders)/sizeof(*subfolders)); ++i) {
         string s1 = dir_output + subfolders[i];
         mkdir(s1.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         cout << s1 << endl;
     }
-    string s2 = dir_output + "data_readable" + sep + "data_readable.txt";
-    remove(s2.c_str());
     
     cout << "image_graph_AMR" << endl;
     Mat im = imread(file_path.c_str(), IMREAD_GRAYSCALE);
@@ -148,9 +152,9 @@ void image_graph_calc(string crd, string dir_input, string file_input)
         printf("2D image_graph ..\n");
     else
         printf("3D image_graph ..\n"); // 3D version
-    Adaptive_Grid AdGrid = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
+    Adaptive_Grid AdGrid = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, &im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
     cout<<"Creating graph"<<endl;
-    grid_grid_all(im, file_path, &AdGrid, 1);
+    grid_grid_all(&im, dir_output, &AdGrid, 1);
     // save0(dir_output+sep+"data_readable"+sep+"data_readable.txt",labels);
 }
 //---------------------------------------------------------------------------//
@@ -369,7 +373,7 @@ Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, doub
     return ag;
 }
 //---------------------------------------------------------------------------//
-Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv, string dir_Edges, string dir_QuadTree, string dir_outpu)
+Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat * im, string dir_conv, string dir_Edges, string dir_QuadTree, string dir_outpu)
 {
     Adaptive_Grid ag;
     time_t starttime;
@@ -405,10 +409,10 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     cout << "[" << 0+(D) << ", " << 0+(D) << ", " << 0+(D)+W << ", " << 0+(D)+H << "]\n";
     
 //##############################################################
-    float Global_thresh = threshold(&im, k, 0 + D, 0 + D + W, 0 + D, 0 + D + H);
+    float Global_thresh = threshold(im, k, 0 + D, 0 + D + W, 0 + D, 0 + D + H);
     cout << Global_thresh << endl;
 //#############################################################################################################
-    checkCell(&Quadtree, &Position, &ThresholdD, 0, k, Couple(0, 0), disvalue, smin, &im, W, H, crd, D, dmax);
+    checkCell(&Quadtree, &Position, &ThresholdD, 0, k, Couple(0, 0), disvalue, smin, im, W, H, crd, D, dmax);
     cout << "the time consumed to built the grid and multilevel thresholding is " << difftime(time(NULL), starttime) << endl;
     long Depth = Position.size();
     printf("Depths = %ld\n", Depth);
@@ -460,7 +464,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     int magn = 5; // scale plot according to the original image size
     Mat img(magn * imHeight, magn * imWidth, CV_8U);
     Mat tim;
-    im.convertTo(tim, CV_8U, 0.5, 125);
+    im->convertTo(tim, CV_8U, 0.5, 125);
     resize(tim, img, img.size(), magn, magn, INTER_NEAREST);
     tim.release();
     cvtColor(img, img, COLOR_GRAY2RGB);
@@ -476,11 +480,11 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     imshow("Display Image", img);
     
     // generate grid
-    ag = Generate_Edges_Convs(Depth, Couple(0,0), &im, disvalue, W, H, smin, &NoDubPosit, dir_conv);
+    ag = Generate_Edges_Convs(Depth, Couple(0,0), im, disvalue, W, H, smin, &NoDubPosit, dir_conv);
     
     // ploting grid
     magn = 5; // scale plot according to the original image size
-    im.convertTo(tim, CV_8U, 0.5, 125);
+    im->convertTo(tim, CV_8U, 0.5, 125);
     resize(tim, img, img.size(), magn, magn, INTER_NEAREST);
     tim.release();
     cvtColor(img, img, COLOR_GRAY2RGB);
@@ -546,7 +550,7 @@ matrix edgekernel(int lx, int ly, double v, double x1, double y1, double x2, dou
     return ek;
 }
 //---------------------------------------------------------------------------//
-void grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
+void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
 {
     time_t temp1 = time(0);
 
@@ -563,16 +567,16 @@ void grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
         y1 = AG->pos[n].k1;
         x2 = AG->pos[m].k0;
         y2 = AG->pos[m].k1;
-        conv.push_back( edgekernel(im.cols, im.rows, AG->Disvalue, x1, y1, x2, y2, 0, 0) );
+        conv.push_back( edgekernel(im->cols, im->rows, AG->Disvalue, x1, y1, x2, y2, 0, 0) );
         // save0(AG->dir_conv + "_L=" + to_string(e), row);
     }
     
     double csumm = 0;
     for (int e = 0; e < AG->Edges.size(); e++) { //loop over n# of edges
         double summ = 0;
-        for (int i = 0; i < im.cols; i++)
-            for (int j = 0; j < im.rows; j++)
-                summ += im.at<double>(i,j) * conv[e][j][i];
+        for (int i = 0; i < im->cols; i++)
+            for (int j = 0; j < im->rows; j++)
+                summ += im->at<double>(i,j) * conv[e][j][i];
         capas.push_back(summ);
         csumm += summ;
     }
@@ -602,8 +606,11 @@ void grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
     
     SETEANV(&graph, "capa", &wht);
 
+    string filnam = dir_output + "data_readable" + sep + "data_readable.txt";
+    remove(filnam.c_str());
+    
     printf("no. of graph edges = %d\n", no);
-    //    save0(dir_output+sep+"data_grph"+sep+"data_grph.npy",graph.Edges);
+    save0(filnam, string("no. of graph edges = %d\n\n", no));
     time_t temp2 = time(0);
     cout << "the time consumed to build the graph is " << difftime(temp2, temp1) << endl;
 
@@ -613,11 +620,13 @@ void grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
     igraph_integer_t diameter;
     igraph_diameter(&graph, &diameter, 0, 0, 0, IGRAPH_UNDIRECTED, 1);
     printf("Diameter of the graph: %d\n", (int) diameter);
+    save0(filnam, string("Diameter of the graph: %d\n\n", (int) diameter));
 
     igraph_real_t cluster;
     igraph_transitivity_undirected(&graph, &cluster, IGRAPH_TRANSITIVITY_NAN);
     printf("Clustering coefficient: %f\n", (float) cluster);
-
+    save0(filnam, string("Clustering coefficient: %f\n\n", (float) cluster));
+    
 //    igraph_vector_t degree;
 //    igraph_degree(&graph, &degree, igraph_vss_all(), IGRAPH_ALL, IGRAPH_NO_LOOPS);
 //    printf("mean[degree] = %f\n" , (float)igraph_vector_prod(&degree) / (float)igraph_vector_size(&degree) );
@@ -636,24 +645,45 @@ void save0(string url, std::vector<double> data) {
     file <<endl;
     file.close();
 }
+void save0(string url, string label) {
+    ofstream file;
+    file.open(url);
+    file << label << endl;
+    file.close();
+}
 //---------------------------------------------------------------------------//
 //####################################################################
 //####################################################################
-int main( int argc, char** argv )
+int main( int argc, char* argv[] )
 {
-    cout << argv[0] << endl;
-    
+    if (argc == 1) {
+        cout <<  "Usage: image_graph <filename>" << endl;
+        return -1;
+    }
+    else if (argc > 2) {
+        cout <<  "Too many arguments!" << endl;
+        return -1;
+    }
     char the_path[256];
     getcwd(the_path, 255);
-    strcat(the_path, "/images/");
-    //    string dir_input("/Users/vincUk/Desktop/image_graph/images/");
     string dir_input(the_path);
-    //    string file_name("Control1.tif");
-    string file_name("Cytoskeletal-1.tif");
+    string file_name(argv[1]);
+    
+    try {
+        FILE *file;
+        file = fopen(file_name.c_str(), "r");
+        if (file == NULL) {
+            cout << "File \"" << file_name << "\" not found!" << endl;
+            return -1;
+        }
+    } catch (int e) {}
+    
     string gridtype("rectangular");
-    cout << "Starting for file \"" + file_name + "\"..." << endl;
+    
+    cout << "Starting with file \"" + file_name + "\"..." << endl;
     cout << "Grid type: " + gridtype + "." << endl;
-    image_graph_calc(gridtype, dir_input, file_name);
+    
+    image_graph_calc(gridtype, dir_input + sep, file_name);
 
     return 0;
 }
