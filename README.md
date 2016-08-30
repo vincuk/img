@@ -1,4 +1,6 @@
-Required `OpenCV` and `igraph`.
+###Requirements:
+
+Required [OpenCV](http://opencv.org) and [igraph](http://igraph.org/c/) libraries.
 
 ###Installation: 
 
