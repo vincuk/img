@@ -153,9 +153,11 @@ void image_graph_calc(string crd, string dir_input, string file_input)
     else
         printf("3D image_graph ..\n"); // 3D version
     Adaptive_Grid AdGrid = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, &im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
-    cout<<"Creating graph"<<endl;
-    grid_grid_all(&im, dir_output, &AdGrid, 1);
-    // save0(dir_output+sep+"data_readable"+sep+"data_readable.txt",labels);
+    if (AdGrid.Disvalue != -1) {
+        cout<<"Creating graph"<<endl;
+        grid_grid_all(&im, dir_output, &AdGrid, 1);
+        // save0(dir_output+sep+"data_readable"+sep+"data_readable.txt",labels);
+    }
 }
 //---------------------------------------------------------------------------//
 float threshold_otsu(Mat * im) {
@@ -322,6 +324,12 @@ Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, doub
         }
     }
     
+    if(Edges.size() == 0) {
+        cout << "No edges add to graph!" << endl;
+        ag.Disvalue = -1;
+        return ag;
+    }
+    
     // Finding Edges' nodes in the main grid
     set<int> connectedNodes;
     Triple z1 = most_common(&Edges);
@@ -461,7 +469,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     sort(NoDubPosit.begin(), NoDubPosit.end(), sortfunct);
     
     // ploting positions
-    int magn = 1; // scale plot according to the original image size
+    int magn = 5; // scale plot according to the original image size
     int pntsize = 3; // points size
     Mat img(magn * imHeight, magn * imWidth, CV_8U);
     Mat tim;
@@ -482,6 +490,8 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     
     // generate grid
     ag = Generate_Edges_Convs(Depth, Couple(0,0), im, disvalue, W, H, smin, &NoDubPosit, dir_conv);
+    
+    if (ag.Disvalue == -1) return ag;
     
     // ploting grid
     im->convertTo(tim, CV_8U, 0.5, 125);
