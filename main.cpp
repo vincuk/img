@@ -625,12 +625,19 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
     igraph_real_t cluster;
     igraph_transitivity_undirected(&graph, &cluster, IGRAPH_TRANSITIVITY_NAN);
     printf("Clustering coefficient: %f\n", (float) cluster);
-    save0(filnam, "Clustering coefficient: "+ to_string((float)cluster) + "\n");
+    save0(filnam, "Clustering coefficient: " + to_string((float)cluster) + "\n");
     
     igraph_vector_t degree;
+    igraph_vector_init(&degree, (int)AG->pos.size());
     igraph_degree(&graph, &degree, igraph_vss_all(), IGRAPH_ALL, IGRAPH_NO_LOOPS);
-//    printf("mean[degree] = %f\n" , (float)igraph_vector_prod(&degree) / (float)igraph_vector_size(&degree) );
-    
+    float meand = (float)igraph_vector_sum(&degree) / (float)igraph_vector_size(&degree);
+    float sigsq = (float)igraph_vector_sumsq(&degree) / (float)igraph_vector_size(&degree) - pow(meand, 2);
+    printf("mean[degree] = %f\n", meand);
+    printf("sigmasq[degree] = %f\n", sigsq);
+    save0(filnam, "Unweighted degree:");
+    save0(filnam, "mean[degree]: " + to_string(meand));
+    save0(filnam, "sigmasq[degree]: " + to_string(sigsq) + "\n");
+
     temp2 = time(0);
     cout << "the time consumed to measure the graph's properties quantitatively is " << difftime(temp2, temp1) << endl;
     
