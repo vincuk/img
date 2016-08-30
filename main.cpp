@@ -1,4 +1,4 @@
-// [includes]
+//[includes]
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -8,15 +8,10 @@
 #include <string>
 #include <sys/stat.h>
 #include <math.h>
-#include <stdio.h>
-#include <sys/types.h>
 #include <ctime>
 #include <vector>
-#include <deque>
 #include <set>
 #include <igraph.h>
-
-
 //---------------------------------------------------------------------------//
 //[namespace]
 using namespace cv;
@@ -24,6 +19,7 @@ using namespace std;
 //---------------------------------------------------------------------------//
 #define sep "/"
 //---------------------------------------------------------------------------//
+//[Integer couples]
 struct Couple {
     int k0;
     int k1;
@@ -43,11 +39,12 @@ struct Couple {
         else return false;
     }
 };
-// doubling operator
+//[Doubling operator for Couple]
 Couple dblCouple(const Couple& a) {
     return Couple(2*a.k0, 2*a.k1);
 }
 //---------------------------------------------------------------------------//
+//[Integer triples]
 struct Triple{
     int k0;
     int k1;
@@ -65,6 +62,7 @@ struct Triple{
 
 };
 //---------------------------------------------------------------------------//
+//[Float triples]
 struct DTriple{
     double k0;
     double k1;
@@ -81,6 +79,7 @@ struct DTriple{
     }
 };
 //---------------------------------------------------------------------------//
+//[Adaptive grid structure]
 struct Adaptive_Grid {
     std::vector<Triple> Edges;
     std::vector<DTriple> pos;
@@ -88,6 +87,7 @@ struct Adaptive_Grid {
     double Disvalue;
 };
 //---------------------------------------------------------------------------//
+//[Positions of adaptive grid cells]
 struct Pos {
     double x;
     double y;
@@ -98,48 +98,22 @@ struct Pos {
     Pos(double x, double y, int Depth, float Threshold) : x(x), y(y), Depth(Depth), Threshold(Threshold) {
     }
 };
-//---------------------------------------------------------------------------//
-struct Graph{
-    std::vector<Triple> Edges;
-    std::vector<int> Keys;
-};
-//---------------------------------------------------------------------------//
-struct Data_Label{
-    string label;
-    std::vector<int> data;
-};
-//---------------------------------------------------------------------------//
-struct Labels{
-};
-//---------------------------------------------------------------------------//
-struct Pos2D3D{
-    std::vector<Triple> pos2D;
-    std::vector<Triple> pos3D;
-};
+//[Quadtree data containers]
 typedef map< int, std::vector<Couple> > nested_dict2;
 typedef map< Couple, std::vector<Pos> > mapelement;
 typedef map< int,  mapelement> nested_dict;
+//[Float matrix]
 typedef vector< vector<double> > matrix;
 //---------------------------------------------------------------------------//
-void image_graph(int imWidth,int imHeight,string crd, Mat image, int smin, int thresholding_m);
 void image_graph_run();
+void image_graph(int imWidth,int imHeight,string crd, Mat image, int smin, int thresholding_m);
 void image_graph_calc(string crd,string dir_input,string file_input);
 Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv,string dir_Edges,string dir_QuadTree,string dir_output);
-igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz);
-void save0(string url,std::vector<Triple> Edges);
-void save0(string url,std::vector<int> data);
-void save0(string url,string label);
-Data_Label graph_graph_all(Graph G,std::vector<DTriple> pos);
-Labels load0(string url);
-void write0(string url,Labels labels);
-void plot0(string url, int imHeight, int imWidth, std::vector<DTriple> pos);
-Labels load0(string url);
-Graph load1(string url);
-int number_of_nodes(Graph g);
-Graph subgraph(Graph g, int n1, int n2);
-Graph convert_node_labels_to_integers(Graph g);
-Pos2D3D image_graph_help_grid_pos2D(int n, std::vector<DTriple> pos);
+void grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz);
+void save0(string url, std::vector<Triple> Edges);
+void save0(string url, std::vector<int> data);
 void save0(string url, std::vector<double> data);
+void save0(string url, string label);
 //---------------------------------------------------------------------------//
 void image_graph_run()
 {
@@ -149,73 +123,44 @@ void image_graph_run()
     string gridtype("rectangular");
     cout << "Starting for file \"" + file_name + "\"..." << endl;
     cout << "Grid type: " + gridtype + "." << endl;
-    image_graph_calc(gridtype,dir_input,file_name);
+    image_graph_calc(gridtype, dir_input, file_name);
     return;
 }
 //---------------------------------------------------------------------------//
-void image_graph_calc(string crd,string dir_input,string file_input)
+void image_graph_calc(string crd, string dir_input, string file_input)
 {
     string name("Adaptive_grid_");
-    string dir_output = dir_input+"Output_"+name+file_input+sep;
-    string subfolders[7] = {"data_posi","data_conv","data_grph","data_datn","data_prop","data_readable","plot_grid"};
-    string file_path = dir_input+file_input;
+    string dir_output = dir_input + "Output_" + name + file_input + sep;
+//    string subfolders[7] = {"data_posi", "data_conv", "data_grph", "data_datn", "data_prop", "data_readable", "plot_grid"};
+    string subfolders[2] = {"data_readable", "plot_grid"};
+    string file_path = dir_input + file_input;
     mkdir(dir_output.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    for (int i = 0; i < (sizeof(subfolders)/sizeof(*subfolders)); ++i)
-    {
-        string s1=dir_output+subfolders[i];
+    cout << "Creating subfolders..." << endl;
+    for (int i = 0; i < (sizeof(subfolders)/sizeof(*subfolders)); ++i) {
+        string s1 = dir_output + subfolders[i];
         mkdir(s1.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        //cout<<s1<<endl;
+        cout << s1 << endl;
     }
-    string s2=dir_output+"data_readable"+sep+"data_readable.txt";
+    string s2 = dir_output + "data_readable" + sep + "data_readable.txt";
     remove(s2.c_str());
     
-    cout<<"image_graph_AMR"<<endl;
+    cout << "image_graph_AMR" << endl;
     Mat im = imread(file_path.c_str(), IMREAD_GRAYSCALE);
     
     int imHeight = im.rows;
     int imWidth = im.cols;
-    int AMR = 1;///to be removed
-    string dir_conv = dir_output+"data_conv"+sep+"data_conv";
-    string dir_Edges = dir_output+"data_Edges"+sep+"data_Edges";
-    string dir_QuadTree = dir_output+"data_QuadTree"+sep+"data_QuadTree";
+    string dir_conv = dir_output + "data_conv" + sep + "data_conv";
+    string dir_Edges = dir_output + "data_Edges" + sep + "data_Edges";
+    string dir_QuadTree = dir_output + "data_QuadTree" + sep + "data_QuadTree";
     
     if(im.dims == 2)
-    {
         printf("2D image_graph ..\n");
-    }
     else
-    {
-        printf("3D image_graph ..\n"); // in next steps I will work on 3D version
-    }
+        printf("3D image_graph ..\n"); // 3D version
     Adaptive_Grid AdGrid = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
-   
-    cout<<"graph"<<endl;
-    time_t temp1 = time(0);
-    igraph_t graph = grid_grid_all(im, file_path, &AdGrid, 1);
-    time_t temp2 = time(0);
-//    save0(dir_output+sep+"data_grph"+sep+"data_grph.npy",graph.Edges);
-    
-    cout << "the time consumed to build the graph is " << difftime(temp2, temp1) << endl;
-    cout<< "obs network" << endl;
-    
-    temp1 = time(0);
-//    Data_Label data_label = graph_graph_all(graph,Edges_pos_dir_conv.pos);
-    temp2 = time(0);
-    cout<<"the time consumed to measure the graph's properties quantitatively is " << difftime(temp2, temp1) << endl;
-//    save0(dir_output+sep+"data_datn"+sep+"data_datn.npy", data_label.data);
-//    save0(dir_output+sep+"data_prop"+sep+"data_prop.npy", data_label.label);
-    
-//    Labels labels=load0(dir_output+sep+"data_prop"+sep+"data_prop.npy");
-    
-//    write0(dir_output+sep+"data_readable"+sep+"data_readable.txt",labels);
-    // with open(dir_output"+sep+"data_readable"+sep+"data_readable.txt","a") as out:
-    //     out.write('\t'.join([str(a) for a in numpy.hstack(labels)]))
-    //     out.write('\n')
-    //     datn=numpy.load(os.path.join(dir_output,'data_datn','data_datn.npy'))
-    //     out.write('\t'.join([str(a) for a in numpy.hstack(datn)]))
-    //     out.write('\n')
-    
-//    plot0(dir_output+sep+"data_grph"+sep+"data_grph.npy",imHeight,imWidth,Edges_pos_dir_conv.pos);
+    cout<<"Creating graph"<<endl;
+    grid_grid_all(im, file_path, &AdGrid, 1);
+    // save0(dir_output+sep+"data_readable"+sep+"data_readable.txt",labels);
 }
 //---------------------------------------------------------------------------//
 float threshold_otsu(Mat * im) {
@@ -244,7 +189,6 @@ float threshold(Mat * img, int k, int x1, int x2, int y1, int y2) {
     }
     return -1;
 }
-
 //---------------------------------------------------------------------------//
 float QudtreeThreshold (Mat * im, int k, vector<Pos> * posi, int Depth) {
     float B1_thresh = threshold(im, k, posi->operator[](0).x, posi->operator[](4).x, posi->operator[](0).y, posi->operator[](4).y);
@@ -522,7 +466,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     sort(NoDubPosit.begin(), NoDubPosit.end(), sortfunct);
     
     // ploting positions
-    int magn = 3; // scale plot according to the original image size
+    int magn = 5; // scale plot according to the original image size
     Mat img(magn * imHeight, magn * imWidth, CV_8U);
     Mat tim;
     im.convertTo(tim, CV_8U, 0.5, 125);
@@ -541,7 +485,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     ag = Generate_Edges_Convs(Depth, Couple(0,0), &im, disvalue, W, H, smin, &NoDubPosit, dir_conv);
     
     // ploting grid
-    magn = 3; // scale plot according to the original image size
+    magn = 5; // scale plot according to the original image size
     im.convertTo(tim, CV_8U, 0.5, 125);
     resize(tim, img, img.size(), magn, magn, INTER_NEAREST);
     tim.release();
@@ -608,8 +552,10 @@ matrix edgekernel(int lx, int ly, double v, double x1, double y1, double x2, dou
     return ek;
 }
 //---------------------------------------------------------------------------//
-igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
+void grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
 {
+    time_t temp1 = time(0);
+
     vector<double> capas;
     vector<matrix> conv;
     
@@ -624,7 +570,7 @@ igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
         x2 = AG->pos[m].k0;
         y2 = AG->pos[m].k1;
         conv.push_back( edgekernel(im.cols, im.rows, AG->Disvalue, x1, y1, x2, y2, 0, 0) );
-//        save0(AG->dir_conv + "_L=" + to_string(e), row);
+        // save0(AG->dir_conv + "_L=" + to_string(e), row);
     }
     
     double csumm = 0;
@@ -644,31 +590,31 @@ igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
     igraph_integer_t no = 0;
     igraph_integer_t gr_size = (int)AG->Edges.size();
     igraph_t graph;
-//    igraph_vector_t edgs;
     igraph_vector_t wht;
     
     igraph_i_set_attribute_table(&igraph_cattribute_table);
     
     igraph_empty(&graph, (int)AG->pos.size(), 0);
-//    igraph_vector_init(&edgs, 2*gr_size);
     igraph_vector_init(&wht, gr_size);
 
     for (int e = 0; e < gr_size; e++) {
         n = AG->Edges[e].k0;
         m = AG->Edges[e].k1;
         igraph_add_edge(&graph, n, m);
-
-//        VECTOR(edgs)[2*e] = n;
-//        VECTOR(edgs)[2*e + 1] = m;
         VECTOR(wht)[e] = capas[e];
         no++;
         printf("(%d, %d)\n", n, m);
     }
     
-//    igraph_add_edges(&graph, &edgs, 0);
     SETEANV(&graph, "capa", &wht);
 
     printf("no. of graph edges = %d\n", no);
+    //    save0(dir_output+sep+"data_grph"+sep+"data_grph.npy",graph.Edges);
+    time_t temp2 = time(0);
+    cout << "the time consumed to build the graph is " << difftime(temp2, temp1) << endl;
+
+    cout<< "obs network" << endl;
+    temp1 = time(0);
 
     igraph_integer_t diameter;
     igraph_diameter(&graph, &diameter, 0, 0, 0, IGRAPH_UNDIRECTED, 1);
@@ -682,42 +628,10 @@ igraph_t grid_grid_all(Mat im, string file_path, Adaptive_Grid * AG, int dz)
 //    igraph_degree(&graph, &degree, igraph_vss_all(), IGRAPH_ALL, IGRAPH_NO_LOOPS);
 //    printf("mean[degree] = %f\n" , (float)igraph_vector_prod(&degree) / (float)igraph_vector_size(&degree) );
     
-    return graph;
-}
-//---------------------------------------------------------------------------//
-Data_Label graph_graph_all(Graph G,std::vector<Triple> pos)
-{
-    Data_Label data_label;
-    return data_label;
-}
-//---------------------------------------------------------------------------//
-void plot0(string url, int imHeight, int imWidth, std::vector<Triple> pos)
-{
-    int ly = imHeight;
-    int lx = imWidth;
-    Graph gn=load1(url);
-    int N=number_of_nodes(gn);
-    //Return a copy of the graph gn with the nodes relabeled using consecutive integers.
-    Graph gc=convert_node_labels_to_integers(subgraph(gn,N-N/1,N));
-    //posi=load(dir_output+sep+"data_posi"+sep+"data_posi.npy").flatten()[0]
-//    Pos2D3D pos2Dpos3D=image_graph_help_grid_pos2D(1,pos);
-    // en=numpy.array([d['capa'] for u,v,d in gn.edges_iter(data=1)])
-    // en=en/en.max()
-    // ec=numpy.array([d['capa'] for u,v,d in gc.edges_iter(data=1)])
-    // ec=ec/en.max()
-    // matplotlib.pyplot.clf()
-}
-//---------------------------------------------------------------------------//
-void Pos2D3D_image_graph_help_grid_pos2D(int n,std::vector<Triple> pos)
-{
-}
-//---------------------------------------------------------------------------//
-void write0(string url,Labels labels)
-{
-}
-//---------------------------------------------------------------------------//
-void save0(string url,std::vector<Triple> Edges)
-{
+    temp2 = time(0);
+    cout<<"the time consumed to measure the graph's properties quantitatively is " << difftime(temp2, temp1) << endl;
+    
+    igraph_destroy(&graph);
 }
 //---------------------------------------------------------------------------//
 void save0(string url, std::vector<double> data) {
@@ -727,46 +641,6 @@ void save0(string url, std::vector<double> data) {
         file << to_string(*it) << "\t";
     file <<endl;
     file.close();
-}
-//---------------------------------------------------------------------------//
-void save0(string url,string label)
-{
-}
-//---------------------------------------------------------------------------//
-Labels load0(string url)
-{
-    Labels labels;
-    return labels;
-}
-//---------------------------------------------------------------------------//
-Graph load1(string url)
-{
-    Graph g;
-    return g;
-}
-//---------------------------------------------------------------------------//
-int number_of_nodes(Graph g)
-{
-    int n;
-    return n;
-}
-//---------------------------------------------------------------------------//
-Graph subgraph(Graph g,int n1, int n2)
-{
-    Graph g1;
-    return g1;
-}
-//---------------------------------------------------------------------------//
-Graph convert_node_labels_to_integers(Graph g)
-{
-    Graph g1;
-    return g1;
-}
-//---------------------------------------------------------------------------//
-Pos2D3D convert_node_labels_to_integers(int nz, std::vector<Triple> pos)
-{
-    Pos2D3D p;
-    return p;
 }
 //---------------------------------------------------------------------------//
 int main( int argc, char** argv )
