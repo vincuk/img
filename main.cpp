@@ -461,7 +461,8 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     sort(NoDubPosit.begin(), NoDubPosit.end(), sortfunct);
     
     // ploting positions
-    int magn = 5; // scale plot according to the original image size
+    int magn = 1; // scale plot according to the original image size
+    int pntsize = 3; // points size
     Mat img(magn * imHeight, magn * imWidth, CV_8U);
     Mat tim;
     im->convertTo(tim, CV_8U, 0.5, 125);
@@ -472,7 +473,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     for(int i = 1; i < NoDubPosit.size(); i++ ) {
         pnt.x = int(magn * NoDubPosit[i].k0);
         pnt.y = int(magn * NoDubPosit[i].k1);
-        circle( img, pnt, 3, Scalar(255, 0, 0), -1);
+        circle( img, pnt, pntsize, Scalar(255, 0, 0), -1);
     }
     imwrite(dir_outpu+sep+"plot_grid"+sep+"plot_positions.jpg", img);
     
