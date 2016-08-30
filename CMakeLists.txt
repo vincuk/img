@@ -1,35 +1,37 @@
-cmake_minimum_required( VERSION 2.8 )
-project( main )
+CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )
+PROJECT( main )
 
 FIND_PATH(IGRAPH_INCLUDE_DIR igraph/igraph.h
-  PATHS
-  $ENV{OSSIM_HOME}
-  NO_DEFAULT_PATH
-    PATH_SUFFIXES include
+	PATHS
+	$ENV{OSSIM_HOME}
+	NO_DEFAULT_PATH
+	PATH_SUFFIXES include.h
 )
 
 FIND_PATH(IGRAPH_INCLUDE_DIR igraph/igraph.h
-  PATHS
-  /home/covise/covise/extern_libs/include
-  /usr/local/include
-  /usr/local/include/<TAB>
-  /usr/include
-  /sw/include # Fink
-  /opt/local/include # DarwinPorts
-  /opt/csw/include # Blastwave
-  /opt/include
+	PATHS
+	/home/covise/covise/extern_libs/include/igraph
+	/usr/local/include/igraph
+	/usr/local/include/<TAB>/igraph
+	/usr/include/igraph
+	/sw/include/igraph # Fink
+	/opt/local/include/igraph # DarwinPorts
+	/opt/csw/include/igraph # Blastwave
+	/opt/include/igraph
+	PATH_SUFFIXES include.h
 )
 
-FIND_LIBRARY(IGRAPH_LIBRARY 
-  NAMES igraph
-  PATHS $ENV{IGRAPH_HOME}
-    NO_DEFAULT_PATH
-    PATH_SUFFIXES lib64 lib
+FIND_LIBRARY( IGRAPH_LIBRARY 
+	NAMES igraph
+	PATHS $ENV{IGRAPH_HOME}
+	NO_DEFAULT_PATH
+	PATH_SUFFIXES lib64 lib dylib
 )
-FIND_LIBRARY(IGRAPH_LIBRARY 
-  NAMES igraph
-  PATHS
-    /home/covise/covise/extern_libs
+
+FIND_LIBRARY( IGRAPH_LIBRARY 
+	NAMES igraph
+	PATHS
+	/home/covise/covise/extern_libs
     /usr/local/Cellar/igraph/<TAB> #brew
     /usr/local
     /usr
@@ -37,30 +39,30 @@ FIND_LIBRARY(IGRAPH_LIBRARY
     /opt/local
     /opt/csw
     /opt
-    /usr/freeware
-  PATH_SUFFIXES lib64 lib
+	/usr/freeware
+	PATH_SUFFIXES lib64 lib dylib
 )
 
-SET(IGRAPH_FOUND "NO")
-IF(IGRAPH_LIBRARY AND IGRAPH_INCLUDE_DIR)
-  SET(IGRAPH_FOUND "YES")
-ENDIF(IGRAPH_LIBRARY AND IGRAPH_INCLUDE_DIR)
+SET( IGRAPH_FOUND "NO" )
+IF( IGRAPH_LIBRARY AND IGRAPH_INCLUDE_DIR )
+	SET( IGRAPH_FOUND "YES" )
+	INCLUDE_DIRECTORIES( ${IGRAPH_INCLUDE_DIR} )
+	LIST( APPEND ThirdParty_LIBS ${IGRAPH_LIBRARY} )
+ELSE()
+	MESSAGE (SEND_ERROR "igraph library not found" )
+ENDIF( IGRAPH_LIBRARY AND IGRAPH_INCLUDE_DIR )
 
-#include_directories( /usr/local/include/igraph )
-#include_directories( /usr/local/Cellar/igraph/0.7.1_3/lib/ )
-#add_library(igraph STATIC IMPORTED)
-#set_property(TARGET igraph PROPERTY
-#             IMPORTED_LOCATION /usr/local/Cellar/igraph/0.7.1_3/lib/libigraph.dylib)
+FIND_PACKAGE( OpenCV REQUIRED )
+IF( OpenCV_FOUND )
+	LIST( APPEND ThirdParty_LIBS ${OpenCV_LIBS} )
+	INCLUDE_DIRECTORIES( ${OpenCV_INCLUDE_DIRS} )
+ELSE()
+	MESSAGE (SEND_ERROR "OpenCV library not found" )
+ENDIF( OpenCV_FOUND )
 
-find_package( OpenCV REQUIRED )
-if( OpenCV_FOUND )
-list( APPEND ThirdParty_LIBS ${OpenCV_LIBS} )
-    include_directories( ${OpenCV_INCLUDE_DIRS} )
-endif( OpenCV_FOUND )
+SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
+ADD_EXECUTABLE( image_graph main.cpp )
 
-add_executable( image_graph main.cpp )
-
-target_link_libraries( image_graph ${OpenCV_LIBS} )
-#target_link_libraries( image_graph igraph )
+TARGET_LINK_LIBRARIES( image_graph ${OpenCV_LIBS} )
+TARGET_LINK_LIBRARIES( image_graph ${IGRAPH_LIBRARY} )
