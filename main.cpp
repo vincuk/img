@@ -609,30 +609,30 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
     string filnam = dir_output + "data_readable" + sep + "data_readable.txt";
     remove(filnam.c_str());
     
-    printf("no. of graph edges = %d\n", no);
-    save0(filnam, string("no. of graph edges = %d\n\n", no));
+    printf("No. of graph edges = %d\n", no);
+    save0(filnam, "No. of graph edges = " + to_string(no) + "\n");
     time_t temp2 = time(0);
     cout << "the time consumed to build the graph is " << difftime(temp2, temp1) << endl;
 
-    cout<< "obs network" << endl;
+    cout << "obs network" << endl;
     temp1 = time(0);
 
     igraph_integer_t diameter;
     igraph_diameter(&graph, &diameter, 0, 0, 0, IGRAPH_UNDIRECTED, 1);
     printf("Diameter of the graph: %d\n", (int) diameter);
-    save0(filnam, string("Diameter of the graph: %d\n\n", (int) diameter));
+    save0(filnam, "Diameter of the graph: " + to_string((int)diameter) + "\n");
 
     igraph_real_t cluster;
     igraph_transitivity_undirected(&graph, &cluster, IGRAPH_TRANSITIVITY_NAN);
     printf("Clustering coefficient: %f\n", (float) cluster);
-    save0(filnam, string("Clustering coefficient: %f\n\n", (float) cluster));
+    save0(filnam, "Clustering coefficient: "+ to_string((float)cluster) + "\n");
     
 //    igraph_vector_t degree;
 //    igraph_degree(&graph, &degree, igraph_vss_all(), IGRAPH_ALL, IGRAPH_NO_LOOPS);
 //    printf("mean[degree] = %f\n" , (float)igraph_vector_prod(&degree) / (float)igraph_vector_size(&degree) );
     
     temp2 = time(0);
-    cout<<"the time consumed to measure the graph's properties quantitatively is " << difftime(temp2, temp1) << endl;
+    cout << "the time consumed to measure the graph's properties quantitatively is " << difftime(temp2, temp1) << endl;
     
     igraph_destroy(&graph);
 }
@@ -647,7 +647,7 @@ void save0(string url, std::vector<double> data) {
 }
 void save0(string url, string label) {
     ofstream file;
-    file.open(url);
+    file.open(url, ios::app);
     file << label << endl;
     file.close();
 }
