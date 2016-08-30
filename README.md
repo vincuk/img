@@ -1,6 +1,6 @@
 ###Requirements:
 
-Required [OpenCV](http://opencv.org) and [igraph](http://igraph.org/c/) library.
+Required [OpenCV](http://opencv.org) and [igraph](http://igraph.org/c/) libraries.
 
 ###Installation: 
 
