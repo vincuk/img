@@ -632,11 +632,12 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
     igraph_degree(&graph, &degree, igraph_vss_all(), IGRAPH_ALL, IGRAPH_NO_LOOPS);
     float meand = (float)igraph_vector_sum(&degree) / (float)igraph_vector_size(&degree);
     float sigsq = (float)igraph_vector_sumsq(&degree) / (float)igraph_vector_size(&degree) - pow(meand, 2);
-    printf("mean[degree] = %f\n", meand);
-    printf("sigmasq[degree] = %f\n", sigsq);
+    cout << "Unweighted degree:" << endl;
+    printf("\tmean[degree] = %f\n", meand);
+    printf("\tsigmasq[degree] = %f\n", sigsq);
     save0(filnam, "Unweighted degree:");
-    save0(filnam, "mean[degree]: " + to_string(meand));
-    save0(filnam, "sigmasq[degree]: " + to_string(sigsq) + "\n");
+    save0(filnam, "\tmean[degree]: " + to_string(meand));
+    save0(filnam, "\tsigmasq[degree]: " + to_string(sigsq) + "\n");
 
     temp2 = time(0);
     cout << "the time consumed to measure the graph's properties quantitatively is " << difftime(temp2, temp1) << endl;
