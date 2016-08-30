@@ -658,10 +658,17 @@ int main( int argc, char* argv[] )
     }
     char the_path[256];
     getcwd(the_path, 255);
-    //    string dir_input("/Users/vincUk/Desktop/image_graph/images/");
     string dir_input(the_path);
-    //    string file_name("Control1.tif");
     string file_name(argv[1]);
+    try {
+        FILE *file;
+        file = fopen(file_name.c_str(), "r");
+        if (file == NULL) {
+            cout << "file \"" << file_name << "\" not found!" << endl;
+            return -1;
+        }
+    } catch (int e) {}
+    
     string gridtype("rectangular");
     cout << "Starting for file \"" + file_name + "\"..." << endl;
     cout << "Grid type: " + gridtype + "." << endl;
