@@ -121,14 +121,18 @@ void save0(string url, string label);
 void image_graph_calc(string crd, string dir_input, string file_input)
 {
     string name("Adaptive_grid_");
-    string file_name = file_input.substr(file_input.find(sep) + 1, file_input.length() - 1);
+    
+    string file_name = file_input.substr(file_input.rfind(sep) + 1, file_input.length() - 1);
     cout << file_name << endl;
     string dir_output = dir_input + "Output_" + name + file_name + sep;
-//    string subfolders[7] = {"data_posi", "data_conv", "data_grph", "data_datn", "data_prop", "data_readable", "plot_grid"};
+    
+    //string subfolders[7] = {"data_posi", "data_conv", "data_grph", "data_datn", "data_prop", "data_readable", "plot_grid"};
     string subfolders[2] = {"data_readable", "plot_grid"};
-    string file_path = dir_input + file_input;
+    string file_path = file_input;
     mkdir(dir_output.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    
     cout << "Creating subfolders..." << endl;
+    
     for (int i = 0; i < (sizeof(subfolders)/sizeof(*subfolders)); ++i) {
         string s1 = dir_output + subfolders[i];
         mkdir(s1.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -664,6 +668,7 @@ int main( int argc, char* argv[] )
     getcwd(the_path, 255);
     string dir_input(the_path);
     string file_name(argv[1]);
+    
     try {
         FILE *file;
         file = fopen(file_name.c_str(), "r");
@@ -674,8 +679,10 @@ int main( int argc, char* argv[] )
     } catch (int e) {}
     
     string gridtype("rectangular");
-    cout << "Starting for file \"" + file_name + "\"..." << endl;
+    
+    cout << "Starting with file \"" + file_name + "\"..." << endl;
     cout << "Grid type: " + gridtype + "." << endl;
+    
     image_graph_calc(gridtype, dir_input + sep, file_name);
 
     return 0;
