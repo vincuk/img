@@ -105,7 +105,6 @@ typedef map< int,  mapelement> nested_dict;
 //[Float matrix]
 typedef vector< vector<double> > matrix;
 //---------------------------------------------------------------------------//
-void image_graph_run();
 void image_graph(int imWidth,int imHeight,string crd, Mat image, int smin, int thresholding_m);
 void image_graph_calc(string crd,string dir_input,string file_input);
 Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string crd, Mat im, string dir_conv,string dir_Edges,string dir_QuadTree,string dir_output);
@@ -118,22 +117,6 @@ void save0(string url, string label);
 //#############################################################################
 //#############################################################################
 //#############################################################################
-//---------------------------------------------------------------------------//
-void image_graph_run()
-{
-    char the_path[256];
-    getcwd(the_path, 255);
-    strcat(the_path, "/images/");
-//    string dir_input("/Users/vincUk/Desktop/image_graph/images/");
-    string dir_input(the_path);
-//    string file_name("Control1.tif");
-    string file_name("Cytoskeletal-1.tif");
-    string gridtype("rectangular");
-    cout << "Starting for file \"" + file_name + "\"..." << endl;
-    cout << "Grid type: " + gridtype + "." << endl;
-    image_graph_calc(gridtype, dir_input, file_name);
-    return;
-}
 //---------------------------------------------------------------------------//
 void image_graph_calc(string crd, string dir_input, string file_input)
 {
@@ -424,7 +407,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
 //##############################################################
     float Global_thresh = threshold(&im, k, 0 + D, 0 + D + W, 0 + D, 0 + D + H);
     cout << Global_thresh << endl;
-//####################################################################
+//#############################################################################################################
     checkCell(&Quadtree, &Position, &ThresholdD, 0, k, Couple(0, 0), disvalue, smin, &im, W, H, crd, D, dmax);
     cout << "the time consumed to built the grid and multilevel thresholding is " << difftime(time(NULL), starttime) << endl;
     long Depth = Position.size();
@@ -654,8 +637,23 @@ void save0(string url, std::vector<double> data) {
     file.close();
 }
 //---------------------------------------------------------------------------//
+//####################################################################
+//####################################################################
 int main( int argc, char** argv )
 {
-    image_graph_run();
+    cout << argv[0] << endl;
+    
+    char the_path[256];
+    getcwd(the_path, 255);
+    strcat(the_path, "/images/");
+    //    string dir_input("/Users/vincUk/Desktop/image_graph/images/");
+    string dir_input(the_path);
+    //    string file_name("Control1.tif");
+    string file_name("Cytoskeletal-1.tif");
+    string gridtype("rectangular");
+    cout << "Starting for file \"" + file_name + "\"..." << endl;
+    cout << "Grid type: " + gridtype + "." << endl;
+    image_graph_calc(gridtype, dir_input, file_name);
+
     return 0;
 }
