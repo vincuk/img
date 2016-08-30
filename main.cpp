@@ -207,8 +207,8 @@ void FindPositions(vector<Pos> * posi, double x1, double y1, double dx, double d
 }
 //---------------------------------------------------------------------------//
 int Divide_Decision(nested_dict * PS, vector<float> * Threshold, int Depth, int k, Couple cellCoords, double disvalue, float smin, int dmax, Mat * im, int imWidth, int imHeight, string crd, int D) {
-    double cellWidth = double(imWidth) / pow(2,Depth);
-    double cellHeight = double(imHeight) / pow(2,Depth);
+    double cellWidth = double(imWidth) / pow(2, Depth);
+    double cellHeight = double(imHeight) / pow(2, Depth);
     
     double dx = double(cellWidth/2);
     double dy = double(cellHeight/2);
@@ -258,7 +258,7 @@ int Divide_Decision(nested_dict * PS, vector<float> * Threshold, int Depth, int 
 }
 //---------------------------------------------------------------------------//
 void checkCell(nested_dict2 * QT, nested_dict * PS, vector<float> * Threshold, int Depth, int k, Couple cellCoords, float disvalue, float smin, Mat * im, int imWidth, int imHeight, string crd, int D, int dmax) {
-    if (Depth > dmax+1) {
+    if (Depth == dmax) {  // Depth > dmax + 1
         cout << "the grid reaches the maximum depth " << Depth << endl;
         return;
     }
@@ -469,7 +469,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     sort(NoDubPosit.begin(), NoDubPosit.end(), sortfunct);
     
     // ploting positions
-    int magn = 5; // scale plot according to the original image size
+    float magn = 1.5; // scale plot according to the original image size
     int pntsize = 3; // points size
     Mat img(magn * imHeight, magn * imWidth, CV_8U);
     Mat tim;
