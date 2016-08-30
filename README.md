@@ -1,3 +1,4 @@
-Installation
-
-`image_graph <file_name>`
+Installation: 
+`cmake .`
+`make`
+Usage: `image_graph <file_name>`
