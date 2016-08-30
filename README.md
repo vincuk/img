@@ -1,3 +1,5 @@
+Required `OpenCV` and `igraph`.
+
 ###Installation: 
 
 `cmake .`
