@@ -427,7 +427,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     cout << endl;
     cout << "  Depth\tAverage thresholding\tNumber of quadarnts " << endl;
     for (int i = 0; i < ThresholdD.size(); i++)
-        printf("  %d\t%f           %lu \n", i, ThresholdD[i], Quadtree[i].size());
+        printf("  %d\t%f\t%lu \n", i, ThresholdD[i], Quadtree[i].size());
     
     // refining the quadtree
     vector<Pos> Posit;
@@ -483,7 +483,6 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     ag = Generate_Edges_Convs(Depth, Couple(0,0), im, disvalue, W, H, smin, &NoDubPosit, dir_conv);
     
     // ploting grid
-    magn = 5; // scale plot according to the original image size
     im->convertTo(tim, CV_8U, 0.5, 125);
     resize(tim, img, img.size(), magn, magn, INTER_NEAREST);
     tim.release();
