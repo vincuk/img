@@ -425,9 +425,9 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
             ThresholdD[i] = float(ThresholdD[i] + Global_thresh)/2;
     }
     cout << endl;
-    cout << "Depth  Average thresholding number of quadarnts " << endl;
+    cout << "  Depth\tAverage thresholding\tNumber of quadarnts " << endl;
     for (int i = 0; i < ThresholdD.size(); i++)
-        printf(" %d         %f           %lu \n", i, ThresholdD[i], Quadtree[i].size());
+        printf("  %d\t%f           %lu \n", i, ThresholdD[i], Quadtree[i].size());
     
     // refining the quadtree
     vector<Pos> Posit;
