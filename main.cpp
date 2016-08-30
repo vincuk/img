@@ -627,8 +627,8 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
     printf("Clustering coefficient: %f\n", (float) cluster);
     save0(filnam, "Clustering coefficient: "+ to_string((float)cluster) + "\n");
     
-//    igraph_vector_t degree;
-//    igraph_degree(&graph, &degree, igraph_vss_all(), IGRAPH_ALL, IGRAPH_NO_LOOPS);
+    igraph_vector_t degree;
+    igraph_degree(&graph, &degree, igraph_vss_all(), IGRAPH_ALL, IGRAPH_NO_LOOPS);
 //    printf("mean[degree] = %f\n" , (float)igraph_vector_prod(&degree) / (float)igraph_vector_size(&degree) );
     
     temp2 = time(0);
