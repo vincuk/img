@@ -1,8 +1,8 @@
-##Installation: 
+###Installation: 
 
 `cmake .`
 
 `make`
 
-##Usage:
+###Usage:
 `image_graph <file_name>`
