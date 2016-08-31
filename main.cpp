@@ -111,7 +111,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
 void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz);
 void save0(string url, std::vector<Triple> Edges);
 void save0(string url, std::vector<int> data);
-void save0(string url, std::vector<double> data);
+void save0(string url, matrix data);
 void save0(string url, string label);
 //---------------------------------------------------------------------------//
 //#############################################################################
@@ -127,7 +127,7 @@ void image_graph_calc(string crd, string dir_input, string file_input)
     string dir_output = dir_input + "Output_" + name + file_name + sep;
     
     //string subfolders[7] = {"data_posi", "data_conv", "data_grph", "data_datn", "data_prop", "data_readable", "plot_grid"};
-    string subfolders[2] = {"data_readable", "plot_grid"};
+    string subfolders[3] = {"data_readable", "data_conv", "plot_grid"};
     string file_path = file_input;
     mkdir(dir_output.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     
@@ -574,33 +574,35 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
     time_t temp1 = time(0);
 
     vector<double> capas;
-    vector<matrix> conv;
+    matrix conv;
     
     int n, m;
     double x1, x2, y1, y2;
 
+    string convdirnam = dir_output + "data_conv" + sep;
+
+    double csumm = 0;
     for (int e = 0; e < AG->Edges.size(); e++) {
+        double summ = 0;
         n = AG->Edges[e].k0;
         m = AG->Edges[e].k1;
         x1 = AG->pos[n].k0;
         y1 = AG->pos[n].k1;
         x2 = AG->pos[m].k0;
         y2 = AG->pos[m].k1;
-        conv.push_back( edgekernel(im->cols, im->rows, AG->Disvalue, x1, y1, x2, y2, 0, 0) );
-        // save0(AG->dir_conv + "_L=" + to_string(e), row);
-    }
-    
-    double csumm = 0;
-    for (int e = 0; e < AG->Edges.size(); e++) { //loop over n# of edges
-        double summ = 0;
+        conv = edgekernel(im->cols, im->rows, AG->Disvalue, x1, y1, x2, y2, 0, 0);
         for (int i = 0; i < im->cols; i++)
             for (int j = 0; j < im->rows; j++) {
                 cout << im->at<double>(i,j) << endl;
-                cout << conv[e][j][i] << endl;
-                summ += im->at<double>(i,j) * conv[e][j][i];
+                cout << conv[j][i] << endl;
+                summ += im->at<double>(i,j) * conv[j][i];
             }
+        string convfname = AG->dir_conv + "_L=" + to_string(e);
+        remove(convfname.c_str());
+        save0(convfname.c_str(), conv);
         capas.push_back(summ);
         csumm += summ;
+
     }
     
     for(int e = 0; e < AG->Edges.size(); e++)
@@ -667,12 +669,15 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
     igraph_destroy(&graph);
 }
 //---------------------------------------------------------------------------//
-void save0(string url, std::vector<double> data) {
+void save0(string url, matrix data) {
     ofstream file;
-    file.open (url, ios::ate);
-    for (auto it = data.begin(); it != data.end(); it++)
-        file << to_string(*it) << "\t";
-    file <<endl;
+    file.open (url, ios::app);
+    for (auto it1 = data.begin(); it1 != data.end(); it1++) {
+        for (auto it2 = it1->begin(); it2 != it1->end(); it2++) {
+            file << to_string(*it2) << "\t";
+        }
+        file << endl;
+    }
     file.close();
 }
 void save0(string url, string label) {
