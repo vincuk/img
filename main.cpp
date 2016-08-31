@@ -540,10 +540,15 @@ matrix edgekernel(int lx, int ly, double v, double x1, double y1, double x2, dou
         ex1.push_back(dx1);
         ex2.push_back(dx2);
     }
+    dx1.clear();
+    dx2.clear();
+    
     for (int i = 0; i < lx; i++) {
         ey1.push_back(dy1);
         ey2.push_back(dy2);
     }
+    dy1.clear();
+    dy2.clear();
     
     double summ = 0;
     for (int i = 0; i < ly; i++) {
@@ -552,6 +557,10 @@ matrix edgekernel(int lx, int ly, double v, double x1, double y1, double x2, dou
             summ += ek[i][j];
         }
     }
+    ex1.clear();
+    ex2.clear();
+    ey1.clear();
+    ey2.clear();
     
     for (int i = 0; i < ly; i++)
         for (int j = 0; j < lx; j++)
@@ -585,8 +594,11 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
     for (int e = 0; e < AG->Edges.size(); e++) { //loop over n# of edges
         double summ = 0;
         for (int i = 0; i < im->cols; i++)
-            for (int j = 0; j < im->rows; j++)
+            for (int j = 0; j < im->rows; j++) {
+                cout << im->at<double>(i,j) << endl;
+                cout << conv[e][j][i] << endl;
                 summ += im->at<double>(i,j) * conv[e][j][i];
+            }
         capas.push_back(summ);
         csumm += summ;
     }
