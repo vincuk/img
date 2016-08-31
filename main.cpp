@@ -470,7 +470,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     //################################################################################
     //################################################################################
 
-    float magn = 5; // scale plot according to the original image size
+    float magn = 2.5; // scale plot according to the original image size
     int pntsize = 3; // points size
     
     //################################################################################
@@ -600,11 +600,8 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
         y2 = AG->pos[m].k1;
         conv = edgekernel(im->cols, im->rows, AG->Disvalue, x1, y1, x2, y2, 0, 0);
         for (int i = 0; i < im->cols; i++)
-            for (int j = 0; j < im->rows; j++) {
-                //cout << im->at<double>(i,j) << endl;
-                //cout << conv[j][i];
-                summ += conv[j][i] * im->at<double>(i,j);
-            }
+            for (int j = 0; j < im->rows; j++)
+                summ += conv[j][i] * im->at<int>( Point2i(i, j) );
         char buf[6];
         sprintf(buf, "%.5i", e);
         string convfname = convdirnam + "data_conv_L=" + buf + ".txt";
