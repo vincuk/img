@@ -83,7 +83,6 @@ struct DTriple{
 struct Adaptive_Grid {
     std::vector<Triple> Edges;
     std::vector<DTriple> pos;
-    string dir_conv;
     double Disvalue;
 };
 //---------------------------------------------------------------------------//
@@ -154,7 +153,7 @@ void image_graph_calc(string crd, string dir_input, string file_input)
         printf("3D image_graph ..\n"); // 3D version
     Adaptive_Grid AdGrid = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, &im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
     if (AdGrid.Disvalue != -1) {
-        cout<<"Creating graph"<<endl;
+        cout << "Start building graph data..." << endl;
         grid_grid_all(&im, dir_output, &AdGrid, 1);
         // save0(dir_output+sep+"data_readable"+sep+"data_readable.txt",labels);
     }
@@ -308,7 +307,6 @@ Triple most_common(vector<Triple> * inlist) {
 Adaptive_Grid Generate_Edges_Convs(long Depth, Couple cellCoords, Mat * im, double DisValue, int imWidth,int imHeight, int MinSize, vector<DTriple> * Posit, string dir_conv) {
     Adaptive_Grid ag;
     ag.Disvalue = DisValue;
-    ag.dir_conv = dir_conv;
     
     double dx = float(imWidth) / pow(2, Depth);
     double dy = float(imHeight) / pow(2, Depth);
@@ -593,11 +591,13 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
         conv = edgekernel(im->cols, im->rows, AG->Disvalue, x1, y1, x2, y2, 0, 0);
         for (int i = 0; i < im->cols; i++)
             for (int j = 0; j < im->rows; j++) {
-                cout << im->at<double>(i,j) << endl;
-                cout << conv[j][i] << endl;
-                summ += im->at<double>(i,j) * conv[j][i];
+                //cout << im->at<double>(i,j) << endl;
+                //cout << conv[j][i];
+                summ += conv[j][i] * im->at<double>(i,j);
             }
-        string convfname = AG->dir_conv + "_L=" + to_string(e);
+        char buf[6];
+        sprintf(buf, "%.5i", e);
+        string convfname = convdirnam + "data_conv_L=" + buf + ".txt";
         remove(convfname.c_str());
         save0(convfname.c_str(), conv);
         capas.push_back(summ);
@@ -607,7 +607,7 @@ void grid_grid_all(Mat * im, string dir_output, Adaptive_Grid * AG, int dz)
     
     for(int e = 0; e < AG->Edges.size(); e++)
         capas[e] /= csumm;
-    cout << "creating the graph\n";
+    cout << "Creating graph...\n";
     
     igraph_integer_t no = 0;
     igraph_integer_t gr_size = (int)AG->Edges.size();
@@ -674,7 +674,9 @@ void save0(string url, matrix data) {
     file.open (url, ios::app);
     for (auto it1 = data.begin(); it1 != data.end(); it1++) {
         for (auto it2 = it1->begin(); it2 != it1->end(); it2++) {
-            file << to_string(*it2) << "\t";
+            char buffer[12];
+            sprintf(buffer, "%.5e", *it2);
+            file << buffer << "\t";
         }
         file << endl;
     }
