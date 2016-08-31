@@ -122,7 +122,6 @@ void image_graph_calc(string crd, string dir_input, string file_input)
     string name("Adaptive_grid_");
     
     string file_name = file_input.substr(file_input.rfind(sep) + 1, file_input.length() - 1);
-    cout << file_name << endl;
     string dir_output = dir_input + "Output_" + name + file_name + sep;
     
     //string subfolders[7] = {"data_posi", "data_conv", "data_grph", "data_datn", "data_prop", "data_readable", "plot_grid"};
@@ -148,7 +147,7 @@ void image_graph_calc(string crd, string dir_input, string file_input)
     string dir_QuadTree = dir_output + "data_QuadTree" + sep + "data_QuadTree";
     
     if(im.dims == 2)
-        printf("2D image_graph ..\n");
+        printf("2D image_graph...\n");
     else
         printf("3D image_graph ..\n"); // 3D version
     Adaptive_Grid AdGrid = image_graph_AMR_2D_Adaptive_grid(imWidth, imHeight, crd, &im, dir_conv, dir_Edges, dir_QuadTree, dir_output);
@@ -202,7 +201,7 @@ void FindPositions(vector<Pos> * posi, double x1, double y1, double dx, double d
             n++;
         }
     }
-    printf("number of positions in Quads:%d\n", n);
+    printf("number of positions in Quads: %d\n", n);
 }
 //---------------------------------------------------------------------------//
 int Divide_Decision(nested_dict * PS, vector<float> * Threshold, int Depth, int k, Couple cellCoords, double disvalue, float smin, int dmax, Mat * im, int imWidth, int imHeight, string crd, int D) {
@@ -394,7 +393,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     int D = int(ceil(log(float(min(imWidth, imHeight))/smin) + float(3/2))) + 1; //because depth start from 0 in Python
     int W = imWidth - (D*2);
     int H = imHeight - (D*2);
-    printf( "imWidth of the grid = %d , imHeight of the grid = %d\n", W, H);
+    printf( "imWidth of the grid = %d, imHeight of the grid = %d\n", W, H);
     int dmax = int(ceil(log(float(min(W, H))/smin) + float(3/2)));
     float disvalue;
     smin <= 16 ? disvalue= 0.5*smin : disvalue = 8; // set Guassian kernel
@@ -433,7 +432,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     cout << endl;
     cout << "  Depth\tAverage thresholding\tNumber of quadarnts " << endl;
     for (int i = 0; i < ThresholdD.size(); i++)
-        printf("  %d\t%f\t%lu \n", i, ThresholdD[i], Quadtree[i].size());
+        printf("  %d\t%f\t\t%lu \n", i, ThresholdD[i], Quadtree[i].size());
     
     // refining the quadtree
     vector<Pos> Posit;
@@ -467,8 +466,19 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     sort(NoDubPosit.begin(), NoDubPosit.end(), sortfunct);
     
     // ploting positions
-    float magn = 2.5; // scale plot according to the original image size
+    //################################################################################
+    //################################################################################
+    //################################################################################
+
+    float magn = 5; // scale plot according to the original image size
     int pntsize = 3; // points size
+    
+    //################################################################################
+    //################################################################################
+    //################################################################################
+    //################################################################################
+    //################################################################################
+    //################################################################################
     Mat img(magn * imHeight, magn * imWidth, CV_8U);
     Mat tim;
     im->convertTo(tim, CV_8U, 0.5, 125);
