@@ -470,7 +470,7 @@ Adaptive_Grid image_graph_AMR_2D_Adaptive_grid(int imWidth,int imHeight, string 
     //################################################################################
     //################################################################################
 
-    float magn = 2.5; // scale plot according to the original image size
+    float magn = 5; // scale plot according to the original image size
     int pntsize = 3; // points size
     
     //################################################################################
